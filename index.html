@@ -126,11 +126,14 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const S = {players:[],by:{},matches:[],mby:{},cfg:{},picks:{},rank:[],ses:null,admin:null,tab:'torneo',ri:0,riSet:false,posTab:'grupos',grp:'*',fil:'todos',cargado:false,err:'',perfil:null};
 const RONDAS = [
- {k:'G1',fase:['G'],n:1,t:'Zonas · Fecha 1'},{k:'G2',fase:['G'],n:2,t:'Zonas · Fecha 2'},{k:'G3',fase:['G'],n:3,t:'Zonas · Fecha 3'}];
-const FASE_N = {G:'Grupos',R32:'16avos',R16:'Octavos',QF:'Cuartos',SF:'Semifinal',T3:'3er puesto',F:'Final'};
-const PTS = {G:1,R32:2,R16:3,QF:4,SF:5,T3:3,F:6};
+ {k:'G1',fase:['G'],n:1,t:'Zonas · Fecha 1'},{k:'G2',fase:['G'],n:2,t:'Zonas · Fecha 2'},{k:'G3',fase:['G'],n:3,t:'Zonas · Fecha 3'},
+ {k:'R16',fase:['R16'],t:'Copas · Octavos de final'},{k:'QF',fase:['QF'],t:'Copas · Cuartos de final'},{k:'SF',fase:['SF'],t:'Copas · Semifinales'},{k:'F',fase:['T3','F'],t:'Copas · Final y 3er puesto'}];
+const FASE_N = {G:'Zonas',R16:'Octavos',QF:'Cuartos',SF:'Semifinal',T3:'3er puesto',F:'Final'};
+const PTS = {G:1,R16:2,QF:3,SF:4,T3:3,F:5};
 const rondaDe = m => RONDAS.find(r=>r.fase.includes(m.fase) && (m.fase!=='G'||r.n===m.fecha_n));
-const delRonda = r => S.matches.filter(m=>r.fase.includes(m.fase) && (r.n==null||m.fecha_n===r.n)).sort((a,b)=>a.id-b.id);
+const COPAS=[{k:'Diamante',l:'D',i:'💎',pos:'1º de cada zona',c:'#2fa4e7',bg:'linear-gradient(135deg,#0b3a63,#1c7fc0)'},{k:'Oro',l:'O',i:'🏆',pos:'2º de cada zona',c:'#d4a017',bg:'linear-gradient(135deg,#5a4100,#c99a1a)'},{k:'Plata',l:'P',i:'🥈',pos:'3º de cada zona',c:'#9aa4b2',bg:'linear-gradient(135deg,#3b4452,#8d97a6)'},{k:'Bronce',l:'B',i:'🥉',pos:'4º de cada zona',c:'#b87333',bg:'linear-gradient(135deg,#4a2a10,#a8642a)'}];
+const copaDe=l=>COPAS.find(c=>c.l===l);
+const delRonda = r => S.matches.filter(m=>r.fase.includes(m.fase) && (r.n==null||m.fecha_n===r.n)).sort((a,b)=>COPAS.findIndex(c=>c.l===a.copa)-COPAS.findIndex(c=>c.l===b.copa)||a.id-b.id);
 
 /* ========================= VISTA PREVIA (solo si todavía no hay servidor conectado) ========================= */
 const DEMO = String(CFG.URL).indexOf('__')===0;
@@ -140,7 +143,7 @@ const DM = (function(){
   const az=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
   const mz=l=>{l=l.slice();for(let i=l.length-1;i>0;i--){const j=az(i+1);[l[i],l[j]]=[l[j],l[i]]}return l};
   const M=[],ST={picks:{}};
-  const mk=o=>Object.assign({id:0,fase:'G',grupo:null,fecha_n:1,orden:1,a_id:null,b_id:null,slot_a:null,slot_b:null,next_id:null,next_slot:null,lose_next_id:null,lose_next_slot:null,ganador_id:null,empate:false,margen:null,estado:'pendiente',cargado_por:null,cargado_en:null,confirmado_por:null,fecha:null,cerrado:false,nota:null},o);
+  const mk=o=>Object.assign({id:0,fase:'G',grupo:null,fecha_n:1,orden:1,copa:null,a_id:null,b_id:null,slot_a:null,slot_b:null,next_id:null,next_slot:null,lose_next_id:null,lose_next_slot:null,ganador_id:null,empate:false,margen:null,estado:'pendiente',cargado_por:null,cargado_en:null,confirmado_por:null,fecha:null,cerrado:false,nota:null},o);
   function sorteo(){
     let k=az(16);const G=[...Array(16)].map(()=>[]);
     ['Europa','América','África','Asia','Oceanía'].forEach(c=>mz(P0.filter(p=>p.continente===c)).forEach(p=>{G[k%16].push(p);k++}));
@@ -148,15 +151,31 @@ const DM = (function(){
     M.length=0;
     for(let gi=0;gi<16;gi++){const g=String.fromCharCode(65+gi),by=n=>P0.find(p=>p.grupo===g&&p.pos===n).id;
       [[1,1,1,2],[2,1,3,4],[3,2,1,3],[4,2,2,4],[5,3,1,4],[6,3,2,3]].forEach(([o,f,x,y])=>M.push(mk({id:gi*6+o,fase:'G',grupo:g,fecha_n:f,orden:o,a_id:by(x),b_id:by(y)})))}
-    const R=[['1A','2B'],['1C','2D'],['1E','2F'],['1G','2H'],['1I','2J'],['1K','2L'],['1M','2N'],['1O','2P'],['1B','2A'],['1D','2C'],['1F','2E'],['1H','2G'],['1J','2I'],['1L','2K'],['1N','2M'],['1P','2O']];
-    R.forEach((r,i)=>M.push(mk({id:101+i,fase:'R32',orden:i+1,slot_a:r[0],slot_b:r[1]})));
-    for(let k=1;k<=8;k++)M.push(mk({id:200+k,fase:'R16',orden:k,slot_a:'W:'+(100+2*k-1),slot_b:'W:'+(100+2*k)}));
-    for(let k=1;k<=4;k++)M.push(mk({id:300+k,fase:'QF',orden:k,slot_a:'W:'+(200+2*k-1),slot_b:'W:'+(200+2*k)}));
-    for(let k=1;k<=2;k++)M.push(mk({id:400+k,fase:'SF',orden:k,slot_a:'W:'+(300+2*k-1),slot_b:'W:'+(300+2*k)}));
-    M.push(mk({id:501,fase:'T3',orden:1,slot_a:'L:401',slot_b:'L:402'}),mk({id:601,fase:'F',orden:1,slot_a:'W:401',slot_b:'W:402'}));
-    // resultados de ejemplo en la fecha 1 de los primeros 8 grupos
-    M.filter(m=>m.fase==='G'&&m.fecha_n===1&&m.grupo<'I').forEach(m=>{const r=az(7);m.estado='confirmado';m.confirmado_por=0;if(r===0){m.empate=true;m.margen=0}else{m.ganador_id=az(2)?m.a_id:m.b_id;m.margen=1+az(4)}});
-    M.filter(m=>m.fase==='G'&&m.fecha_n===1&&m.grupo==='I').slice(0,1).forEach(m=>{m.estado='cargado';m.ganador_id=m.a_id;m.margen=2;m.cargado_por=m.a_id});
+    ['D','O','P','B'].forEach((c,ci)=>{const b=1000+ci*100;
+      for(let k=1;k<=8;k++)M.push(mk({id:b+k,fase:'R16',orden:k,copa:c,slot_a:'S'+[1,8,5,4,3,6,7,2][k-1],slot_b:'S'+[16,9,12,13,14,11,10,15][k-1],next_id:b+10+Math.ceil(k/2),next_slot:k%2?'a':'b'}));
+      for(let k=1;k<=4;k++)M.push(mk({id:b+10+k,fase:'QF',orden:k,copa:c,slot_a:'W:'+(b+2*k-1),slot_b:'W:'+(b+2*k),next_id:b+20+Math.ceil(k/2),next_slot:k%2?'a':'b'}));
+      for(let k=1;k<=2;k++)M.push(mk({id:b+20+k,fase:'SF',orden:k,copa:c,slot_a:'W:'+(b+10+2*k-1),slot_b:'W:'+(b+10+2*k),next_id:b+41,next_slot:k===1?'a':'b',lose_next_id:b+31,lose_next_slot:k===1?'a':'b'}));
+      M.push(mk({id:b+31,fase:'T3',orden:1,copa:c,slot_a:'L:'+(b+21),slot_b:'L:'+(b+22)}),mk({id:b+41,fase:'F',orden:1,copa:c,slot_a:'W:'+(b+21),slot_b:'W:'+(b+22)}));});
+    // ejemplo: todas las zonas jugadas, copas armadas y algunos octavos/cuartos jugados
+    const jugar=m=>{m.estado='confirmado';m.confirmado_por=0;m.ganador_id=az(2)?m.a_id:m.b_id;m.margen=1+az(4)};
+    M.filter(m=>m.fase==='G').forEach(m=>{if(az(7)===0){m.estado='confirmado';m.confirmado_por=0;m.empate=true;m.margen=0}else jugar(m)});
+    avanzar();
+    M.filter(m=>m.copa==='D'&&m.fase==='R16').forEach(jugar);avanzar();
+    M.filter(m=>m.copa==='D'&&m.fase==='QF').slice(0,3).forEach(jugar);avanzar();
+    M.filter(m=>m.copa==='O'&&m.fase==='R16').slice(0,5).forEach(jugar);avanzar();
+    const c1=M.find(m=>m.copa==='P'&&m.fase==='R16');if(c1){c1.estado='cargado';c1.ganador_id=c1.a_id;c1.margen=2;c1.cargado_por=c1.a_id}
+  }
+  function stand(g){const ps=P0.filter(p=>p.grupo===g),st={};ps.forEach(p=>st[p.id]={id:p.id,pts:0,dif:0});
+    M.filter(m=>m.fase==='G'&&m.grupo===g&&m.estado==='confirmado').forEach(m=>{if(m.empate){st[m.a_id].pts++;st[m.b_id].pts++}else{const w=st[m.ganador_id],l=st[m.ganador_id===m.a_id?m.b_id:m.a_id];w.pts+=3;w.dif+=m.margen;l.dif-=m.margen}});
+    return Object.values(st).sort((x,y)=>y.pts-x.pts||y.dif-x.dif||x.id-y.id)}
+  function avanzar(){
+    const gs=[...new Set(P0.map(p=>p.grupo))].sort();
+    if(M.filter(m=>m.fase==='G').every(m=>m.estado==='confirmado'))['D','O','P','B'].forEach((c,ci)=>{
+      if(M.some(m=>m.copa===c&&m.fase==='R16'&&m.estado!=='pendiente'))return;
+      const sd=gs.map(g=>Object.assign({g},stand(g)[ci])).sort((a,b)=>b.pts-a.pts||b.dif-a.dif||(a.g<b.g?-1:1)).map(x=>x.id);
+      [1,8,5,4,3,6,7,2].forEach((x,i)=>{const m=M.find(y=>y.id===1000+ci*100+i+1&&y.estado==='pendiente');if(m){m.a_id=sd[x-1];m.b_id=sd[[16,9,12,13,14,11,10,15][i]-1]}})});
+    ['R16','QF','SF'].forEach(f=>M.filter(m=>m.fase===f).forEach(m=>{const ok=m.estado==='confirmado'&&!m.empate,w=ok?m.ganador_id:null,l=ok?(w===m.a_id?m.b_id:m.a_id):null;
+      const put=(id,sl,v)=>{const n=M.find(x=>x.id===id);if(n&&n.estado==='pendiente')n[sl==='a'?'a_id':'b_id']=v};if(m.next_id)put(m.next_id,m.next_slot,w);if(m.lose_next_id)put(m.lose_next_id,m.lose_next_slot,l)}));
   }
   sorteo();
   const ok={ok:true};
@@ -169,8 +188,8 @@ const DM = (function(){
         case 'mm_picks_partido':r=[];break;
         case 'mm_set_pick':if(!m||m.estado!=='pendiente'||m.cerrado){r={ok:false,error:'Pronósticos cerrados para este partido'}}else ST.picks[m.id]=a.p_pick;break;
         case 'mm_cargar_resultado':m.estado='cargado';m.cargado_por=a.p_player;m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;break;
-        case 'mm_confirmar':m.estado=a.p_ok?'confirmado':'disputado';break;
-        case 'mm_admin_resultado':m.estado='confirmado';m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;break;
+        case 'mm_confirmar':m.estado=a.p_ok?'confirmado':'disputado';avanzar();break;
+        case 'mm_admin_resultado':m.estado='confirmado';m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;avanzar();break;
         case 'mm_admin_anular':m.estado='pendiente';m.ganador_id=null;m.empate=false;m.margen=null;break;
         case 'mm_admin_sorteo':P0.forEach(p=>{const x=a.p_asig.find(y=>y.player===p.id);p.grupo=x.grupo;p.pos=x.pos});break;
         case 'mm_admin_pins':r={ok:true,pins:P0.slice(0,5).map(p=>({id:p.id,nombre:p.nombre,pais:p.pais,pin:String(1000+az(9000))}))};break;
@@ -202,9 +221,9 @@ async function cargar(silencio){
 function rondaActual(){for(let i=0;i<RONDAS.length;i++){const l=delRonda(RONDAS[i]);if(l.some(m=>m.estado!=='confirmado'&&(m.a_id||m.fase==='G')))return i;}return RONDAS.length-1}
 
 /* ========================= utilidades de partido ========================= */
-function slotTxt(s){if(!s)return'—';let m;if(m=/^([12])([A-P])$/.exec(s))return m[1]+'º Grupo '+m[2];if(m=/^W:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Ganador '+(x?FASE_N[x.fase]+' '+x.orden:'?')}if(m=/^L:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Perdedor '+(x?FASE_N[x.fase]+' '+x.orden:'?')}return s}
+function slotTxt(s){if(!s)return'—';let m;if(m=/^([12])([A-P])$/.exec(s))return m[1]+'º Grupo '+m[2];if(m=/^S(\d+)$/.exec(s))return 'Cabeza de serie '+m[1];if(m=/^W:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Ganador '+(x?FASE_N[x.fase]+' '+x.orden:'?')}if(m=/^L:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Perdedor '+(x?FASE_N[x.fase]+' '+x.orden:'?')}return s}
 function lado(m,w){const id=m[w+'_id'],p=id&&S.by[id];return p?{p,fl:p.bandera,cd:p.codigo,nm:p.nombre,pais:p.pais}:{p:null,fl:'❔',cd:'???',nm:slotTxt(m['slot_'+w])||'Por definir',pais:''}}
-function lbl(m){if(m.fase==='G')return 'Zona '+m.grupo+' · Fecha '+m.fecha_n;return FASE_N[m.fase]+(['T3','F'].includes(m.fase)?'':' '+m.orden)}
+function lbl(m){if(m.fase==='G')return 'Zona '+m.grupo+' · Fecha '+m.fecha_n;const c=copaDe(m.copa);return (c?'Copa '+c.k+' · ':'')+FASE_N[m.fase]+(['T3','F'].includes(m.fase)?'':' '+m.orden)}
 function fechaTxt(m){if(!m.fecha)return 'Fecha a coordinar';const d=new Date(m.fecha);const dias=['dom.','lun.','mar.','mié.','jue.','vie.','sáb.'];return dias[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' - '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function resTxt(m){if(m.estado!=='confirmado'&&m.estado!=='cargado')return'';if(m.empate)return 'Empate';const w=S.by[m.ganador_id];return (w?w.codigo:'?')+' gana '+m.margen+' UP'}
 function abierto(m){return m.estado==='pendiente'&&!m.cerrado&&m.a_id&&m.b_id&&!(m.fecha&&new Date()>=new Date(m.fecha))}
@@ -226,6 +245,22 @@ function tabla(g){
   const ov=S.cfg.desempate&&S.cfg.desempate[g];const completo=ms.length===6&&ms.every(m=>m.estado==='confirmado');
   if(ov&&completo)l=ov.map(id=>st[id]).filter(Boolean);
   return {l,completo,jugados:conf.length,manual:!!(ov&&completo)};
+}
+function copaFinal(l){
+  const ms=S.matches.filter(m=>m.copa===l),g=f=>ms.filter(m=>m.fase===f),out={};
+  const gan=m=>m&&m.estado==='confirmado'&&!m.empate?m.ganador_id:null,per=m=>{const w=gan(m);return w?(w===m.a_id?m.b_id:m.a_id):null};
+  out[1]=gan(g('F')[0]);out[2]=per(g('F')[0]);out[3]=gan(g('T3')[0]);out[4]=per(g('T3')[0]);
+  const dif={};ms.filter(m=>['R16','QF'].includes(m.fase)&&m.estado==='confirmado'&&!m.empate).forEach(m=>{const w=m.ganador_id,x=w===m.a_id?m.b_id:m.a_id;dif[w]=(dif[w]||0)+m.margen;dif[x]=(dif[x]||0)-m.margen});
+  if(g('QF').length&&g('QF').every(m=>m.estado==='confirmado')){const o=g('QF').map(per).filter(Boolean).sort((a,b)=>(dif[b]||0)-(dif[a]||0)||a-b);o.forEach((id,i)=>out[5+i]=id)}
+  return out;
+}
+function vCopas(){
+  const sel=copaDe(S.copaSel)||COPAS[0],fin=copaFinal(sel.l),ms=S.matches.filter(m=>m.copa===sel.l);
+  const chips=`<div class="chips">${COPAS.map(c=>`<button class="${c.l===sel.l?'on':''}" onclick="S.copaSel='${c.l}';pintar()">${c.i} ${c.k}</button>`).join('')}</div>`;
+  const armada=ms.some(m=>m.a_id);
+  const tabla=`<div class="card" style="padding:0;overflow:hidden"><div style="background:${sel.bg};color:#fff;padding:12px 14px"><b style="letter-spacing:.04em">${sel.i} COPA ${sel.k.toUpperCase()}</b><div style="font-size:12px;opacity:.9">${sel.pos} · 16 jugadores · eliminación directa</div></div><table class="pos">${[1,2,3,4,5,6].map(n=>{const p=S.by[fin[n]];return `<tr><td style="width:34px"><b>${n}º</b></td><td class="n">${p?p.bandera+' <b>'+esc(p.codigo)+'</b> '+esc(p.nombre):'<span class="sub2">'+(armada?'a definir':'se arma al terminar las 16 zonas')+'</span>'}</td><td style="text-align:right;white-space:nowrap"><b>${$m(PREMIOS[sel.k][n-1])}</b></td></tr>`}).join('')}</table></div><div class="sub2" style="margin:6px 16px">5º y 6º: entre los 4 perdedores de cuartos, por diferencia de hoyos en la copa.</div>`;
+  const rondas=[['R16','Octavos de final'],['QF','Cuartos de final'],['SF','Semifinales'],['T3','Tercer puesto'],['F','Final']];
+  return chips+tabla+rondas.map(([f,t])=>{const l=ms.filter(m=>m.fase===f).sort((a,b)=>a.id-b.id);return `<div class="card"><div class="meta"><b>${t}</b><span class="sub2">${l.filter(m=>m.estado==='confirmado').length}/${l.length}</span></div>${l.map(filaPartido).join('')}</div>`}).join('');
 }
 function grupos(){return [...new Set(S.players.map(p=>p.grupo).filter(Boolean))].sort()}
 function empateCritico(g){const t=tabla(g);if(!t.completo||t.manual)return false;for(let i=0;i<t.l.length-1;i++){const a=t.l[i],b=t.l[i+1];if(a.pts===b.pts&&a.dif===b.dif&&a.h2h===b.h2h)return true}return false}
@@ -283,7 +318,7 @@ function vFix(){
   const ch=[['todos','Todos'],['mios','Mis partidos'],['pend','Pendientes'],['jug','Jugados']].map(([k,t])=>`<button class="${S.fil===k?'on':''}" onclick="S.fil='${k}';pintar()">${t}</button>`).join('');
   let cuerpo='';
   if(r.fase[0]==='G'){const porG={};ms.forEach(m=>(porG[m.grupo]=porG[m.grupo]||[]).push(m));cuerpo=Object.keys(porG).sort().map(g=>`<div class="card"><div class="meta"><b>Grupo ${g}</b><span class="sub2">${r.t.split('·')[1]}</span></div>${porG[g].map(filaPartido).join('')}</div>`).join('')}
-  else cuerpo=ms.length?`<div class="card">${ms.map(filaPartido).join('')}</div>`:'';
+  else cuerpo=COPAS.map(c=>{const l=ms.filter(m=>m.copa===c.l);return l.length?`<div class="card"><div class="meta"><b style="color:${c.c}">${c.i} COPA ${c.k.toUpperCase()}</b><span class="sub2">${esc(r.t.replace('Copas · ',''))}</span></div>${l.map(filaPartido).join('')}</div>`:''}).join('');
   return selRonda()+`<div class="chips">${ch}</div>`+(cuerpo||'<div class="msg">No hay partidos para mostrar con este filtro.</div>');
 }
 
@@ -327,12 +362,13 @@ async function conf(id,ok){try{const r=await rpc('mm_confirmar',{p_player:S.ses.
 async function anular(id){if(!confirm('¿Anular el resultado de este partido?'))return;const r=await rpc('mm_admin_anular',{p_apin:S.admin,p_match:id});if(!r.ok){alert(r.error);return}cerrar();toast('Anulado');await cargar(true)}
 
 function vPos(){
-  const tabs=`<div class="chips"><button class="${S.posTab==='grupos'?'on':''}" onclick="S.posTab='grupos';pintar()">Grupos</button><button class="${S.posTab==='prode'?'on':''}" onclick="S.posTab='prode';pintar()">Prode (pronósticos)</button></div>`;
+  const tabs=`<div class="chips"><button class="${S.posTab==='grupos'?'on':''}" onclick="S.posTab='grupos';pintar()">Grupos</button><button class="${S.posTab==='copas'?'on':''}" onclick="S.posTab='copas';pintar()">Copas</button><button class="${S.posTab==='prode'?'on':''}" onclick="S.posTab='prode';pintar()">Prode</button></div>`;
+  if(S.posTab==='copas')return tabs+vCopas();
   if(S.posTab==='prode'){
     const rk=S.rank.slice(),yo=S.ses&&S.ses.id,pos=rk.findIndex(x=>x.player_id===yo)+1;
     let h=tabs+(yo?`<div class="prog"><span>Tu puesto</span><b>${pos?pos+'º de '+rk.length:'sin puntos todavía'}</b></div>`:'');
     h+=`<div class="card"><div class="list">${rk.length?rk.map((x,i)=>{const p=S.by[x.player_id]||{};return `<div class="it" ${x.player_id===yo?'style="background:#fff5d6;margin:0 -12px;padding-left:12px;padding-right:12px"':''}><b style="width:26px;color:var(--tx3)">${i+1}</b><span class="fl">${p.bandera||''}</span><div class="g"><b>${esc(p.nombre)}</b><span>${x.aciertos} aciertos de ${x.jugados}</span></div><b style="font-size:17px">${x.puntos}</b></div>`}).join(''):'<div class="sub2">Todavía no hay partidos jugados con pronósticos.</div>'}</div></div>
-    <div class="sub2" style="margin:8px 16px">Cada acierto en zonas suma 1 punto. Los puntos de las copas se publican cuando se defina su cuadro.</div>`;return h}
+    <div class="sub2" style="margin:8px 16px">Zonas 1 punto · octavos 2 · cuartos 3 · semis 4 · 3er puesto 3 · final 5.</div>`;return h}
   const gs=grupos();if(!gs.length)return tabs+'<div class="msg">Las zonas todavía no se sortearon. Cuando la organización haga el sorteo, vas a ver las 16 tablas acá.</div>';
   const yoG=S.ses&&S.ses.id&&S.by[S.ses.id]&&S.by[S.ses.id].grupo;
   const chips=`<div class="chips"><button class="${S.grp==='*'?'on':''}" onclick="S.grp='*';pintar()">Todos</button>${yoG?`<button class="${S.grp==='mi'?'on':''}" onclick="S.grp='mi';pintar()">Mi grupo</button>`:''}${gs.map(g=>`<button class="${S.grp===g?'on':''}" onclick="S.grp='${g}';pintar()">${g}</button>`).join('')}</div>`;
@@ -341,7 +377,6 @@ function vPos(){
 }
 
 const PREMIOS={Diamante:[450,330,200,130,100,90],Oro:[340,250,140,100,80,60],Plata:[230,160,100,70,50,40],Bronce:[110,80,50,40,30,20]};
-const COPAS=[{k:'Diamante',i:'💎',pos:'1º de cada zona',c:'#2fa4e7',bg:'linear-gradient(135deg,#0b3a63,#1c7fc0)'},{k:'Oro',i:'🏆',pos:'2º de cada zona',c:'#d4a017',bg:'linear-gradient(135deg,#5a4100,#c99a1a)'},{k:'Plata',i:'🥈',pos:'3º de cada zona',c:'#9aa4b2',bg:'linear-gradient(135deg,#3b4452,#8d97a6)'},{k:'Bronce',i:'🥉',pos:'4º de cada zona',c:'#b87333',bg:'linear-gradient(135deg,#4a2a10,#a8642a)'}];
 const $m=n=>'$'+(n*1000).toLocaleString('es-AR');
 function cuenta(){const ini=new Date(2026,11,12,0,0,0),fin=new Date(2026,11,14,0,0,0),ya=new Date();
   if(ya>=fin)return {t:'🏁 Torneo finalizado',s:'¡Gracias por jugar el Mundialito!'};
@@ -362,8 +397,8 @@ function vTorneo(){
     h+=mios.length?mios.map(m=>{const r=rival(m);const acc=['pendiente','disputado'].includes(m.estado)?`<button class="btn sm" onclick="event.stopPropagation();formRes(${m.id})">Cargar resultado</button>`:(m.cargado_por!==S.ses.id?`<button class="btn sm" onclick="event.stopPropagation();detalle(${m.id})">Confirmar resultado</button>`:'<span class="tag warn">Esperando a tu rival</span>');
       return `<div class="card" onclick="detalle(${m.id})"><div class="meta"><span>${esc(lbl(m))}</span><span>${esc(fechaTxt(m))}</span></div><div class="row sb"><div><b style="font-size:16px">vs ${r?r.bandera+' '+esc(r.nombre):esc(slotTxt(m.a_id===S.ses.id?m.slot_b:m.slot_a))}</b><div class="sub2">${r?esc(r.pais):'Rival por definir'}</div></div>${m.a_id&&m.b_id?acc:''}</div></div>`}).join(''):'<div class="msg ok">No tenés partidos pendientes ahora. ¡Atento a la próxima ronda!</div>';
   }
-  h+=`<h2 class="sec">Las 4 copas · ${$m(3250)} en premios</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px">${COPAS.map(c=>`<div style="background:${c.bg};color:#fff;border-radius:14px;padding:14px 10px;text-align:center"><div style="font-size:30px">${c.i}</div><div style="font-weight:900;letter-spacing:.04em">COPA ${c.k.toUpperCase()}</div><div style="font-size:11.5px;opacity:.9">${c.pos}</div><div style="margin-top:6px;font-weight:800;font-size:15px;color:#ffe9a8">${$m(PREMIOS[c.k][0])}</div><div style="font-size:10.5px;opacity:.85">al campeón</div></div>`).join('')}</div>
-  <div class="sub2" style="margin:8px 16px">Al terminar las 16 zonas, cada jugador va a la copa que le corresponde por su posición en la zona (1º a 4º).</div>
+  h+=`<h2 class="sec">Las 4 copas · ${$m(3250)} en premios</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px">${COPAS.map(c=>`<div onclick="S.tab='pos';S.posTab='copas';S.copaSel='${c.l}';pintar();window.scrollTo(0,0)" style="background:${c.bg};color:#fff;border-radius:14px;padding:14px 10px;text-align:center;cursor:pointer"><div style="font-size:30px">${c.i}</div><div style="font-weight:900;letter-spacing:.04em">COPA ${c.k.toUpperCase()}</div><div style="font-size:11.5px;opacity:.9">${c.pos}</div><div style="margin-top:6px;font-weight:800;font-size:15px;color:#ffe9a8">${$m(PREMIOS[c.k][0])}</div><div style="font-size:10.5px;opacity:.85">al campeón</div></div>`).join('')}</div>
+  <div class="sub2" style="margin:8px 16px">Al terminar las 16 zonas, cada jugador va a la copa que le corresponde por su posición en la zona (1º a 4º). Tocá una copa para ver su cuadro.</div>
   <h2 class="sec">Distribución de premios</h2><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:13px;text-align:center"><tr style="background:#0b1b3b;color:#fff"><th style="padding:9px 4px">Puesto</th>${COPAS.map(c=>`<th style="padding:9px 2px;background:${c.bg}">${c.i}<br>${c.k}</th>`).join('')}</tr>${[0,1,2,3,4,5].map(i=>`<tr style="border-top:1px solid var(--bd);${i%2?'background:#faf6e8':''}"><td style="padding:9px 4px;font-weight:900">${i+1}º</td>${COPAS.map(c=>`<td style="padding:9px 2px;font-weight:700">${$m(PREMIOS[c.k][i])}</td>`).join('')}</tr>`).join('')}<tr style="background:#0b1b3b;color:#ffe9a8;font-weight:900"><td colspan="5" style="padding:12px">TOTAL A REPARTIR: ${$m(3250)}</td></tr></table></div>
   <h2 class="sec">Puntuación y desempate</h2><div class="card"><div class="row" style="justify-content:space-around;text-align:center"><div><div style="font-size:26px">✅</div><b>Victoria</b><div class="sub2">3 puntos</div></div><div><div style="font-size:26px">🟰</div><b>Empate</b><div class="sub2">1 punto</div></div><div><div style="font-size:26px">❌</div><b>Derrota</b><div class="sub2">0 puntos</div></div></div>
    <div class="sep" style="height:1px;background:var(--bd);margin:12px 0"></div><b>Desempate, en este orden:</b>
@@ -376,7 +411,7 @@ function vMas(){
   const yo=S.ses&&S.ses.id&&S.by[S.ses.id];
   let h=`<div class="card">${yo?`<div class="row"><span style="font-size:40px">${yo.bandera}</span><div><b style="font-size:17px">${esc(yo.nombre)}</b><div class="sub2">${esc(yo.pais)} · ${esc(yo.continente)}${yo.grupo?' · Grupo '+yo.grupo:''}</div></div></div>`:'<b>Estás mirando como espectador</b>'}<div class="row" style="margin-top:12px"><button class="btn gris sm" onclick="salir()">${yo?'Cerrar sesión':'Entrar con mi nombre'}</button><button class="btn gris sm" onclick="compartir()">Compartir la app</button></div></div>`;
   h+=`<h2 class="sec">Participantes por continente</h2>`+['Europa','América','África','Asia','Oceanía'].map(c=>{const l=S.players.filter(p=>p.continente===c);return `<details class="card"><summary style="font-weight:800;cursor:pointer">${c} <span class="sub2">· ${l.length}</span></summary><div class="list" style="margin-top:8px">${l.map(p=>`<div class="it"><span class="fl">${p.bandera}</span><div class="g"><b>${esc(p.nombre)}</b><span>${esc(p.pais)}${p.grupo?' · Grupo '+p.grupo:''}</span></div></div>`).join('')}</div></details>`}).join('');
-  h+=`<h2 class="sec">Reglamento</h2><div class="card sub2" style="color:var(--tx)"><b>Formato:</b> 64 jugadores en 16 zonas (A a P) de 4, todos contra todos en 3 fechas, sábado 12 y domingo 13 de diciembre. Victoria 3 pts, empate 1, derrota 0.<br><br><b>Copas:</b> según la posición en la zona: 1º Copa Diamante, 2º Oro, 3º Plata, 4º Bronce.<br><br><b>Desempate:</b> 1º diferencia de hoyos, 2º enfrentamiento directo, 3º penalty putt a 3 hoyos.<br><br><b>Resultados:</b> cada jugador carga el resultado de su partido y el rival lo confirma. Si hay desacuerdo, resuelve la organización.<br><br><b>Pronósticos:</b> elegí quién gana (en zonas también empate). Se cierran cuando empieza el partido o la organización los cierra. Cada acierto en zonas suma 1 punto; los puntos de las copas se publican cuando se defina su cuadro.</div>`;
+  h+=`<h2 class="sec">Reglamento</h2><div class="card sub2" style="color:var(--tx)"><b>Formato:</b> 64 jugadores en 16 zonas (A a P) de 4, todos contra todos en 3 fechas, sábado 12 y domingo 13 de diciembre. Victoria 3 pts, empate 1, derrota 0.<br><br><b>Copas:</b> según la posición en la zona: 1º Copa Diamante, 2º Oro, 3º Plata, 4º Bronce. Cada copa es de eliminación directa entre 16 (octavos, cuartos, semis, final y 3er puesto); los octavos se arman por rendimiento en la zona (el mejor contra el peor). 5º y 6º salen entre los perdedores de cuartos por diferencia de hoyos.<br><br><b>Desempate:</b> 1º diferencia de hoyos, 2º enfrentamiento directo, 3º penalty putt a 3 hoyos.<br><br><b>Resultados:</b> cada jugador carga el resultado de su partido y el rival lo confirma. Si hay desacuerdo, resuelve la organización.<br><br><b>Pronósticos:</b> elegí quién gana (en zonas también empate). Se cierran cuando empieza el partido o la organización los cierra. Puntos por acierto: zonas 1 · octavos 2 · cuartos 3 · semis 4 · 3er puesto 3 · final 5.</div>`;
   h+=`<h2 class="sec">Organización</h2><div class="card">${S.admin?adminHTML():'<button class="btn sec full" onclick="adminLogin()">🔐 Entrar como organización</button>'}</div>`;
   h+='<div class="sub2" style="text-align:center;margin:18px">Frigurso FootGolf · Mundialito Elite 2026</div>';return h;
 }
