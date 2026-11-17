@@ -110,6 +110,7 @@ label.l{display:block;font-size:12px;color:var(--tx2);margin:10px 0 4px;font-wei
 </div>
 <nav class="bar hide" id="nav">
  <button data-t="torneo"><span class="i">🏆</span>Torneo</button>
+ <button data-t="vivo"><span class="i">🔴</span>En vivo</button>
  <button data-t="pos"><span class="i">📊</span>Posiciones</button>
  <button data-t="pron"><span class="i">🎯</span>Pronósticos</button>
  <button data-t="fix"><span class="i">📅</span>Fixture</button>
@@ -143,7 +144,7 @@ const DM = (function(){
   const az=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
   const mz=l=>{l=l.slice();for(let i=l.length-1;i>0;i--){const j=az(i+1);[l[i],l[j]]=[l[j],l[i]]}return l};
   const M=[],ST={picks:{}};
-  const mk=o=>Object.assign({id:0,fase:'G',grupo:null,fecha_n:1,orden:1,copa:null,a_id:null,b_id:null,slot_a:null,slot_b:null,next_id:null,next_slot:null,lose_next_id:null,lose_next_slot:null,ganador_id:null,empate:false,margen:null,estado:'pendiente',cargado_por:null,cargado_en:null,confirmado_por:null,fecha:null,cerrado:false,nota:null},o);
+  const mk=o=>Object.assign({id:0,fase:'G',grupo:null,fecha_n:1,orden:1,copa:null,a_id:null,b_id:null,slot_a:null,slot_b:null,next_id:null,next_slot:null,lose_next_id:null,lose_next_slot:null,ganador_id:null,empate:false,margen:null,a_score:null,b_score:null,estado:'pendiente',cargado_por:null,cargado_en:null,confirmado_por:null,fecha:null,cerrado:false,nota:null},o);
   function sorteo(){
     let k=az(16);const G=[...Array(16)].map(()=>[]);
     ['Europa','América','África','Asia','Oceanía'].forEach(c=>mz(P0.filter(p=>p.continente===c)).forEach(p=>{G[k%16].push(p);k++}));
@@ -188,9 +189,14 @@ const DM = (function(){
         case 'mm_picks_partido':r=[];break;
         case 'mm_set_pick':if(!m||m.estado!=='pendiente'||m.cerrado){r={ok:false,error:'Pronósticos cerrados para este partido'}}else ST.picks[m.id]=a.p_pick;break;
         case 'mm_cargar_resultado':m.estado='cargado';m.cargado_por=a.p_player;m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;break;
+        case 'mm_cargar_marcador':case 'mm_admin_marcador':{const md=(ST.modo||'hoyos'),d=md==='hoyos'?a.p_a-a.p_b:a.p_b-a.p_a;
+          if(d===0&&m.fase!=='G'){r={ok:false,error:'En eliminatorias no puede haber empate: se define con hoyos extra'};break}
+          m.cargado_en=new Date().toISOString();m.a_score=a.p_a;m.b_score=a.p_b;m.empate=d===0;m.ganador_id=d===0?null:(d>0?m.a_id:m.b_id);m.margen=Math.abs(d);
+          if(fn==='mm_admin_marcador'){m.estado='confirmado';m.confirmado_por=0;avanzar()}else{m.estado='cargado';m.cargado_por=a.p_player}break}
+        case 'mm_admin_modo':ST.modo=a.p_modo;break;
         case 'mm_confirmar':m.estado=a.p_ok?'confirmado':'disputado';avanzar();break;
         case 'mm_admin_resultado':m.estado='confirmado';m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;avanzar();break;
-        case 'mm_admin_anular':m.estado='pendiente';m.ganador_id=null;m.empate=false;m.margen=null;break;
+        case 'mm_admin_anular':m.estado='pendiente';m.ganador_id=null;m.empate=false;m.margen=null;m.a_score=null;m.b_score=null;break;
         case 'mm_admin_sorteo':P0.forEach(p=>{const x=a.p_asig.find(y=>y.player===p.id);p.grupo=x.grupo;p.pos=x.pos});break;
         case 'mm_admin_pins':r={ok:true,pins:P0.slice(0,5).map(p=>({id:p.id,nombre:p.nombre,pais:p.pais,pin:String(1000+az(9000))}))};break;
         case 'mm_admin_fecha':M.filter(x=>x.fase===a.p_fase&&(a.p_fecha_n==null||x.fecha_n===a.p_fecha_n)).forEach(x=>x.fecha=a.p_fecha);break;
@@ -206,8 +212,9 @@ async function rest(t,qs){if(DEMO)return DM.rest(t);const r=await fetch(`${CFG.U
 async function rpc(fn,args){if(DEMO)return DM.rpc(fn,args||{});const r=await fetch(`${CFG.URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},HD()),body:JSON.stringify(args||{})});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
 
 /* ========================= datos ========================= */
-async function cargar(silencio){
+async function cargar(silencio,liv){
   try{
+    if(liv&&S.cargado){const [ma,cf]=await Promise.all([rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S.err='';S.last=Date.now();if(!document.querySelector('#sheet:not(.hide)')&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))pintar();return}
     const [pl,ma,cf]=await Promise.all([rest('mm_players','select=*&order=id'),rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);
     S.players=pl;S.by={};pl.forEach(p=>S.by[p.id]=p);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);
     S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);
@@ -225,7 +232,8 @@ function slotTxt(s){if(!s)return'—';let m;if(m=/^([12])([A-P])$/.exec(s))retur
 function lado(m,w){const id=m[w+'_id'],p=id&&S.by[id];return p?{p,fl:p.bandera,cd:p.codigo,nm:p.nombre,pais:p.pais}:{p:null,fl:'❔',cd:'???',nm:slotTxt(m['slot_'+w])||'Por definir',pais:''}}
 function lbl(m){if(m.fase==='G')return 'Zona '+m.grupo+' · Fecha '+m.fecha_n;const c=copaDe(m.copa);return (c?'Copa '+c.k+' · ':'')+FASE_N[m.fase]+(['T3','F'].includes(m.fase)?'':' '+m.orden)}
 function fechaTxt(m){if(!m.fecha)return 'Fecha a coordinar';const d=new Date(m.fecha);const dias=['dom.','lun.','mar.','mié.','jue.','vie.','sáb.'];return dias[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' - '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
-function resTxt(m){if(m.estado!=='confirmado'&&m.estado!=='cargado')return'';if(m.empate)return 'Empate';const w=S.by[m.ganador_id];return (w?w.codigo:'?')+' gana '+m.margen+' UP'}
+function modo(){return (S.cfg&&S.cfg.modo)==='golpes'?'golpes':'hoyos'}
+function resTxt(m){if(m.estado!=='confirmado'&&m.estado!=='cargado')return'';if(m.a_score!=null&&m.b_score!=null)return m.a_score+' – '+m.b_score;if(m.empate)return 'Empate';const w=S.by[m.ganador_id];return (w?w.codigo:'?')+' gana '+m.margen+' UP'}
 function abierto(m){return m.estado==='pendiente'&&!m.cerrado&&m.a_id&&m.b_id&&!(m.fecha&&new Date()>=new Date(m.fecha))}
 function soyDe(m){return S.ses&&S.ses.id&&(m.a_id===S.ses.id||m.b_id===S.ses.id)}
 function rival(m){return S.by[m.a_id===S.ses.id?m.b_id:m.a_id]}
@@ -271,7 +279,7 @@ function pintar(){
   $('yo').textContent=S.ses?(S.ses.id?(S.by[S.ses.id]?S.by[S.ses.id].bandera+' '+S.by[S.ses.id].nombre.split(' ')[0]:'Yo'):'👀 Espectador'):'';
   $('msgbar').innerHTML=(DEMO?'<div class="msg">🧪 <b>VISTA PREVIA</b> con datos de ejemplo: cualquier PIN entra y nada se guarda. El torneo real se activa cuando se conecte el servidor.</div>':'')+(S.err?`<div class="msg bad">${esc(S.err)}</div>`:'');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
-  const f={torneo:vTorneo,pos:vPos,pron:vPron,fix:vFix,mas:vMas}[S.tab];$('main').innerHTML=f();
+  const f={torneo:vTorneo,vivo:vVivo,pos:vPos,pron:vPron,fix:vFix,mas:vMas}[S.tab];$('main').innerHTML=f();
 }
 function go(t){S.tab=t;pintar();window.scrollTo(0,0)}
 function selRonda(){const r=RONDAS[S.ri];return `<div class="selr"><button onclick="rondaMas(-1)">‹</button><div class="mid">${esc(r.t)} ▾</div><button onclick="rondaMas(1)">›</button></div>`}
@@ -343,23 +351,59 @@ function cerrar(){$('sheet').classList.add('hide')}
 $('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')cerrar()});
 
 function formRes(id,adm){
-  const m=S.mby[id],A=lado(m,'a'),Bq=lado(m,'b');window._fr={id,adm,w:null};
-  abrirSheet(`<button class="x" onclick="cerrar()">✕</button><h3>Resultado del partido</h3><div class="sub2">${esc(lbl(m))} · tocá quién ganó</div>
-  <div class="row" style="margin:14px 0"><div class="opt" id="rA" style="flex:1" onclick="elegirW('A')"><span style="font-size:30px">${A.fl}</span>${esc(A.cd)}<small>${esc(A.nm)}</small></div>${m.fase==='G'?`<div class="opt" id="rE" style="flex:.7" onclick="elegirW('E')"><span style="font-size:22px">＝</span><small>Empate</small></div>`:''}<div class="opt" id="rB" style="flex:1" onclick="elegirW('B')"><span style="font-size:30px">${Bq.fl}</span>${esc(Bq.cd)}<small>${esc(Bq.nm)}</small></div></div>
-  <div id="mgw"><label class="l">¿Por cuántos hoyos ganó? (ej. 3 si fue 3&2)</label><select class="in" id="mg">${[...Array(18)].map((_,i)=>`<option value="${i+1}">${i+1} UP</option>`).join('')}</select></div>
-  ${m.fase!=='G'?'<div class="sub2" style="margin-top:8px">En eliminatorias no hay empate: se define con hoyos extra.</div>':''}
+  const m=S.mby[id],A=lado(m,'a'),Bq=lado(m,'b'),g=modo()==='golpes';window._fr={id,adm,a:0,b:0};
+  const col=(k,L)=>`<div style="flex:1;text-align:center"><span style="font-size:30px">${L.fl}</span><div><b>${esc(L.cd)}</b></div><div class="sub2">${esc(L.nm)}</div>
+    <div class="row" style="justify-content:center;gap:6px;margin-top:8px"><button class="btn gris" style="padding:8px 14px;font-size:20px" onclick="stp('${k}',-1)">−</button><b id="sc${k}" style="font-size:30px;min-width:56px">0</b><button class="btn" style="padding:8px 14px;font-size:20px" onclick="stp('${k}',1)">+</button></div></div>`;
+  abrirSheet(`<button class="x" onclick="cerrar()">✕</button><h3>Resultado del partido</h3><div class="sub2">${esc(lbl(m))} · ${g?'anotá los <b>golpes</b> de cada uno (ej. −10 y −8: gana el que tiene menos)':'anotá los <b>hoyos ganados</b> por cada uno (ej. 1 a 0)'}</div>
+  <div class="row" style="margin:14px 0;align-items:flex-start">${col('a',A)}<div style="align-self:center;font-size:20px;color:var(--tx3)">vs</div>${col('b',Bq)}</div>
+  <div id="frres" class="sub2" style="text-align:center;min-height:20px"></div>
+  ${m.fase!=='G'?'<div class="sub2" style="margin-top:4px">En eliminatorias no hay empate: se define con hoyos extra.</div>':''}
   <button class="btn full" style="margin-top:14px" onclick="enviarRes()">${adm?'Guardar como organización':'Enviar resultado'}</button>
   ${adm?'':'<div class="sub2" style="margin-top:8px">Tu rival lo tiene que confirmar para que cuente.</div>'}<div class="err" id="frerr" style="color:#c00;margin-top:8px"></div>`);
+  frCalc();
 }
-function elegirW(w){_fr.w=w;['A','E','B'].forEach(k=>{const e=$('r'+k);if(e)e.classList.toggle('on',k===w)});$('mgw').classList.toggle('hide',w==='E')}
+function stp(k,d){const g=modo()==='golpes';let v=_fr[k]+d;if(!g)v=Math.max(0,Math.min(18,v));else v=Math.max(-40,Math.min(80,v));_fr[k]=v;frCalc()}
+function frCalc(){const m=S.mby[_fr.id],A=lado(m,'a'),Bq=lado(m,'b'),g=modo()==='golpes';
+  $('sca').textContent=_fr.a;$('scb').textContent=_fr.b;
+  const d=g?_fr.b-_fr.a:_fr.a-_fr.b;$('frres').innerHTML=d===0?'Queda <b>empate</b>':'Gana <b>'+esc(d>0?A.cd:Bq.cd)+'</b> por '+Math.abs(d)+(g?' golpe(s)':' hoyo(s)')}
 async function enviarRes(){
-  const f=_fr,m=S.mby[f.id];if(!f.w){$('frerr').textContent='Elegí quién ganó (o empate)';return}
-  const emp=f.w==='E',gan=emp?null:(f.w==='A'?m.a_id:m.b_id),mg=emp?0:+$('mg').value;
-  try{const r=f.adm?await rpc('mm_admin_resultado',{p_apin:S.admin,p_match:f.id,p_ganador:gan,p_empate:emp,p_margen:mg}):await rpc('mm_cargar_resultado',{p_player:S.ses.id,p_pin:S.ses.pin,p_match:f.id,p_ganador:gan,p_empate:emp,p_margen:mg});
+  const f=_fr;
+  try{const r=f.adm?await rpc('mm_admin_marcador',{p_apin:S.admin,p_match:f.id,p_a:f.a,p_b:f.b}):await rpc('mm_cargar_marcador',{p_player:S.ses.id,p_pin:S.ses.pin,p_match:f.id,p_a:f.a,p_b:f.b});
     if(!r.ok){$('frerr').textContent=r.error;return}cerrar();toast(f.adm?'✔ Guardado':'✔ Enviado: falta que lo confirme tu rival');await cargar(true)}catch(e){$('frerr').textContent='Sin conexión'}
 }
 async function conf(id,ok){try{const r=await rpc('mm_confirmar',{p_player:S.ses.id,p_pin:S.ses.pin,p_match:id,p_ok:ok});if(!r.ok){toast(r.error);return}cerrar();toast(ok?'✔ Confirmado':'Marcado en disputa');await cargar(true)}catch(e){toast('Sin conexión')}}
 async function anular(id){if(!confirm('¿Anular el resultado de este partido?'))return;const r=await rpc('mm_admin_anular',{p_apin:S.admin,p_match:id});if(!r.ok){alert(r.error);return}cerrar();toast('Anulado');await cargar(true)}
+
+
+/* ========================= EN VIVO ========================= */
+function haceTxt(t){if(!t)return'';const s=Math.max(0,(Date.now()-new Date(t))/1000);return s<60?'recién':s<3600?'hace '+Math.floor(s/60)+' min':'hace '+Math.floor(s/3600)+' h'}
+function vVivo(){
+  const ri=rondaActual(),r=RONDAS[ri],ms=delRonda(r).filter(m=>m.a_id&&m.b_id),tot=ms.length;
+  const fin=ms.filter(m=>m.estado==='confirmado'),xc=ms.filter(m=>['cargado','disputado'].includes(m.estado)),fal=ms.filter(m=>m.estado==='pendiente');
+  const pc=tot?Math.round(fin.length*100/tot):0,g=modo()==='golpes';
+  let h=`<div class="hero" style="margin-top:12px"><div class="big" style="font-size:20px"><span style="color:#ff4d4d">●</span> EN VIVO · ${esc(r.t)}</div><div class="sub">Se anota por ${g?'golpes (gana el que tiene menos)':'hoyos ganados (gana el que tiene más)'} · se actualiza solo</div>
+   <div style="background:rgba(255,255,255,.25);border-radius:99px;height:10px;margin-top:12px;overflow:hidden"><div style="width:${pc}%;height:100%;background:#fff"></div></div>
+   <div class="kpis"><div><b>${fin.length}</b><span>terminados</span></div><div><b>${xc.length}</b><span>por confirmar</span></div><div><b>${fal.length}</b><span>sin terminar</span></div></div></div>`;
+  const yo=S.ses&&S.ses.id&&S.by[S.ses.id];
+  if(yo){const mio=ms.find(soyDe);if(mio){const rv=rival(mio);h+=`<div class="card" onclick="detalle(${mio.id})"><div class="meta"><span>Tu partido · ${esc(lbl(mio))}</span><span>${mio.estado==='confirmado'?'<span class="tag ok">Terminado</span>':mio.estado==='pendiente'?'<span class="tag warn">Falta jugar</span>':'<span class="tag warn">Por confirmar</span>'}</span></div><b style="font-size:16px">vs ${rv?rv.bandera+' '+esc(rv.nombre):'?'}</b>${resTxt(mio)?`<div class="sub2">Resultado: <b>${esc(resTxt(mio))}</b></div>`:''}</div>`}
+    if(yo.grupo){const t=tabla(yo.grupo),pos=t.l.findIndex(x=>x.p.id===yo.id)+1;h+=`<div class="prog"><span>Tu posición en la Zona ${yo.grupo}</span><b>${pos}º · ${t.l[pos-1].pts} pts</b></div>`}}
+  const rec=S.matches.filter(m=>['cargado','confirmado'].includes(m.estado)&&m.cargado_en).sort((a,b)=>new Date(b.cargado_en)-new Date(a.cargado_en)).slice(0,10);
+  h+='<h2 class="sec">Últimos resultados</h2><div class="card">'+(rec.length?rec.map(m=>`<div style="margin-bottom:4px">${filaPartido(m)}<div class="sub2" style="text-align:center">${esc(lbl(m))} · ${esc(haceTxt(m.cargado_en))}</div></div>`).join(''):'<div class="sub2">Todavía no se cargó ningún resultado.</div>')+'</div>';
+  const f=S.vf||'todos',est=m=>m.estado==='confirmado'?'ok':m.estado==='pendiente'?'falta':'conf';
+  const filas=[];ms.forEach(m=>['a','b'].forEach(w=>filas.push({p:S.by[m[w+'_id']],rv:S.by[m[(w==='a'?'b':'a')+'_id']],m,e:est(m)})));
+  const cnt={ok:filas.filter(x=>x.e==='ok').length,falta:filas.filter(x=>x.e==='falta').length,conf:filas.filter(x=>x.e==='conf').length};
+  const q=(S.vq||'').toLowerCase();
+  let lst=filas.filter(x=>x.p&&(f==='todos'||f===x.e)&&(!q||(x.p.nombre+' '+x.p.pais).toLowerCase().includes(q)));
+  const orden={falta:0,conf:1,ok:2};lst.sort((a,b)=>orden[a.e]-orden[b.e]||(a.p.grupo||'').localeCompare(b.p.grupo||'')||a.p.id-b.p.id);
+  h+=`<h2 class="sec">Quién terminó y quién no</h2><div class="chips">${[['todos','Todos ('+filas.length+')'],['ok','✔ Terminaron ('+cnt.ok+')'],['conf','⏳ Por confirmar ('+cnt.conf+')'],['falta','🔴 Sin terminar ('+cnt.falta+')']].map(([k,t])=>`<button class="${f===k?'on':''}" onclick="S.vf='${k}';pintar()">${t}</button>`).join('')}</div>
+   <div style="margin:8px 12px"><input class="in" id="vq" placeholder="Buscar jugador o país…" value="${esc(S.vq||'')}" oninput="S.vq=this.value;clearTimeout(vq_t);vq_t=setTimeout(()=>{pintar();const e=$('vq');e.focus();e.setSelectionRange(e.value.length,e.value.length)},350)"></div>
+   <div class="card"><div class="list">${lst.length?lst.slice(0,80).map(x=>`<div class="it" onclick="detalle(${x.m.id})"><span class="fl">${x.p.bandera}</span><div class="g"><b>${esc(x.p.nombre)}</b><span>${x.m.fase==='G'?'Zona '+x.p.grupo+' · ':''}vs ${x.rv?esc(x.rv.nombre):'?'}${x.e==='ok'?' · '+esc(resTxt(x.m)):''}</span></div><span class="tag ${x.e==='ok'?'ok':x.e==='conf'?'warn':'bad'}">${x.e==='ok'?'Terminó':x.e==='conf'?'Por confirmar':'Falta'}</span></div>`).join(''):'<div class="sub2">Nadie en esta lista.</div>'}</div></div>`;
+  const gs=grupos();
+  if(gs.length){h+='<h2 class="sec">Posiciones por zona</h2>';gs.forEach(gr=>{const t=tabla(gr),n=S.matches.filter(m=>m.fase==='G'&&m.grupo===gr&&m.estado==='confirmado').length;
+    h+=`<details class="card" ${yo&&yo.grupo===gr?'open':''}><summary style="font-weight:800;cursor:pointer">Zona ${gr} <span class="sub2">· ${n}/6 partidos</span></summary><div class="list" style="margin-top:8px">${t.l.map((x,i)=>`<div class="it"><b style="width:22px;color:var(--tx3)">${i+1}</b><span class="fl">${x.p.bandera}</span><div class="g"><b>${esc(x.p.nombre)}</b><span>${x.pj} PJ · dif ${x.dif>0?'+':''}${x.dif}</span></div><b>${x.pts} pts</b></div>`).join('')}</div></details>`})}
+  return h;
+}
+var vq_t;
 
 function vPos(){
   const tabs=`<div class="chips"><button class="${S.posTab==='grupos'?'on':''}" onclick="S.posTab='grupos';pintar()">Grupos</button><button class="${S.posTab==='copas'?'on':''}" onclick="S.posTab='copas';pintar()">Copas</button><button class="${S.posTab==='prode'?'on':''}" onclick="S.posTab='prode';pintar()">Prode</button></div>`;
@@ -434,6 +478,8 @@ function adminHTML(){
    <label class="l">Ronda</label><select class="in" id="afr">${RONDAS.map((r,i)=>`<option value="${i}" ${i===S.ri?'selected':''}>${esc(r.t)}</option>`).join('')}</select>
    <label class="l">Fecha y hora de los partidos de esa ronda</label><input class="in" type="datetime-local" id="afd">
    <div class="row" style="margin-top:8px"><button class="btn sm" onclick="adFecha()">Guardar fecha</button><button class="btn sm gris" onclick="adCerrar(true)">🔒 Cerrar pronósticos</button><button class="btn sm gris" onclick="adCerrar(false)">🔓 Abrir</button></div></details>
+  <details style="margin-top:10px"><summary><b>⚙ Cómo se anota el resultado</b> <span class="tag">${modo()==='golpes'?'Golpes':'Hoyos'}</span></summary><div class="sub2" style="margin:6px 0">Hoyos: gana el que tiene más (ej. 1 a 0). Golpes: gana el que tiene menos (ej. −10 a −8). Solo se puede cambiar si no hay resultados cargados.</div>
+   <div class="row"><button class="btn sm ${modo()==='hoyos'?'':'gris'}" onclick="adModo('hoyos')">Hoyos ganados</button><button class="btn sm ${modo()==='golpes'?'':'gris'}" onclick="adModo('golpes')">Golpes</button></div></details>
   <details style="margin-top:10px"><summary><b>5. Desempates (penalty putt)</b> <span class="tag ${crit.length?'warn':''}">${crit.length}</span></summary>${crit.length?crit.map(g=>{const t=tabla(g);return `<div style="margin:8px 0"><b>Grupo ${g}</b> <span class="sub2">igualados en puntos, hoyos y cruce directo → penalty putt</span><div class="row">${[0,1,2,3].map(i=>`<select class="in" style="width:auto" id="dq${g}${i}">${t.l.map(r=>`<option value="${r.p.id}" ${r.p.id===t.l[i].p.id?'selected':''}>${i+1}º ${esc(r.p.codigo)}</option>`).join('')}</select>`).join('')}<button class="btn sm" onclick="adDes('${g}')">Fijar</button></div></div>`}).join(''):'<div class="sub2">No hay empates que resolver.</div>'}</details>`;
 }
 function azar(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
@@ -453,6 +499,7 @@ function msgPin(x,url){return `Hola ${x.nombre.split(' ')[0]}! Tu acceso al Mund
 function copiarPins(){const url=location.href.split('#')[0].split('?')[0];navigator.clipboard.writeText(_pins.map(x=>x.nombre+' ('+x.pais+'): '+x.pin).join('\n')+'\n\nLink: '+url).then(()=>toast('Copiado'))}
 function csvPins(){const b=new Blob(['﻿Nombre;País;PIN\r\n'+_pins.map(x=>[x.nombre,x.pais,x.pin].join(';')).join('\r\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pins_mundialito.csv';a.click()}
 async function adFecha(){const r=RONDAS[+$('afr').value],v=$('afd').value;if(!v){alert('Elegí fecha y hora');return}const f=r.fase;for(const fase of f){const x=await rpc('mm_admin_fecha',{p_apin:S.admin,p_fase:fase,p_fecha_n:r.n==null?null:r.n,p_fecha:new Date(v).toISOString()});if(!x.ok){alert(x.error);return}}toast('✔ Fecha guardada');await cargar(true)}
+async function adModo(k){const x=await rpc('mm_admin_modo',{p_apin:S.admin,p_modo:k});if(!x.ok){alert(x.error);return}if(DEMO)S.cfg.modo=k;toast('Modo: '+(k==='golpes'?'golpes':'hoyos ganados'));await cargar(true)}
 async function adCerrar(c){const r=RONDAS[+$('afr').value];for(const fase of r.fase){const x=await rpc('mm_admin_cerrar',{p_apin:S.admin,p_fase:fase,p_fecha_n:r.n==null?null:r.n,p_cerrado:c});if(!x.ok){alert(x.error);return}}toast(c?'🔒 Pronósticos cerrados':'🔓 Pronósticos abiertos');await cargar(true)}
 async function adDes(g){const o=[0,1,2,3].map(i=>+$('dq'+g+i).value);if(new Set(o).size!==4){alert('Cada jugador tiene que aparecer una sola vez');return}const x=await rpc('mm_admin_desempate',{p_apin:S.admin,p_grupo:g,p_orden:o});if(!x.ok){alert(x.error);return}toast('✔ Desempate fijado');await cargar(true)}
 
@@ -480,7 +527,7 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t
   if(!S.cargado){$('login').classList.remove('hide');$('lg1').innerHTML='<div class="err" style="margin-top:30px">'+esc(S.err)+'</div><div class="lk" onclick="location.reload()">Reintentar</div>';return}
   if(S.ses&&S.ses.id){const r=await rpc('mm_login',{p_player:S.ses.id,p_pin:S.ses.pin}).catch(()=>({ok:true}));if(!r.ok){S.ses=null;localStorage.removeItem('mm_ses')}}
   if(S.ses)entrar();else loginUI();
-  setInterval(()=>{if(!document.hidden&&S.ses)cargar(true)},30000);
+  (function tick(){const ms=(S.tab==='vivo'?12000:25000)+Math.random()*5000;setTimeout(()=>{if(!document.hidden&&S.ses){S._n=(S._n||0)+1;cargar(true,S._n%6!==0).finally(tick)}else tick()},ms)})();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.ses)cargar(true)});
 })();
 /* service worker: avisa y recarga cuando hay versión nueva */
