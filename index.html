@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#D7263D">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Mundialito Elite 2026 · Frigurso FootGolf</title>
+<style>
+:root{--rojo:#D7263D;--rojo2:#b81d31;--celeste:#5FB0E8;--bg:#eef0f3;--card:#fff;--tx:#14181f;--tx2:#5b6472;--tx3:#8c95a3;--bd:#dfe3e9;--ok:#1f9d55;--mal:#d33;--ama:#e0a100;--nav:60px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;overscroll-behavior-y:contain}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.35;padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px)}
+#app{max-width:560px;margin:0 auto;min-height:100vh;background:var(--bg)}
+header.top{background:var(--rojo);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 14px 12px;position:sticky;top:0;z-index:50}
+header.top .t{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:.02em}
+header.top .t small{font-weight:600;opacity:.85;font-size:11px;display:block;letter-spacing:.04em}
+header.top .logo{width:34px;height:34px;flex:none}
+header.top .sp{flex:1}
+header.top .yo{background:rgba(255,255,255,.18);border-radius:99px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap;max-width:44vw;overflow:hidden;text-overflow:ellipsis}
+.selr{display:flex;gap:8px;margin:12px 12px 0}
+.selr button{border:1px solid var(--bd);background:#fff;border-radius:8px;width:44px;font-size:18px;color:var(--rojo);font-weight:800}
+.selr .mid{flex:1;border:1px solid var(--bd);background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;padding:10px 6px;text-align:center}
+.prog{margin:12px 14px 0;font-size:13px;color:var(--tx2);display:flex;justify-content:space-between;border-bottom:1px solid var(--bd);padding-bottom:6px}
+h2.sec{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:16px 14px 8px;font-weight:800}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;margin:8px 12px;padding:12px}
+.card .meta{display:flex;justify-content:space-between;align-items:center;color:var(--tx3);font-size:12px;border-bottom:1px solid var(--bd);padding-bottom:8px;margin-bottom:10px;gap:8px}
+.card .meta b{color:var(--tx2);font-weight:600}
+.pr{display:flex;align-items:center;gap:6px}
+.side{flex:1;text-align:center;font-weight:800;font-size:13px;min-width:0}
+.side .fl{font-size:34px;line-height:1.1;display:block}
+.side .nm{display:block;font-weight:600;font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side .cd{display:block;letter-spacing:.04em}
+.opt{flex:1.1;border:2px dashed #9bd0a3;border-radius:10px;padding:10px 4px;text-align:center;background:#fff;font-weight:800;font-size:15px;color:var(--tx3);min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none}
+.opt.on{border:2px solid var(--rojo);background:var(--rojo);color:#fff}
+.opt.dis{opacity:.55;cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok);color:#fff}.opt.mal{border-color:var(--mal);background:#fdeaea;color:var(--mal)}
+.opt small{font-size:10px;font-weight:600;opacity:.9}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#eceff3;color:var(--tx2)}
+.tag.ok{background:#dff5e8;color:#127a40}.tag.warn{background:#fff1cf;color:#8a6200}.tag.bad{background:#fde1e1;color:#a22}.tag.red{background:var(--rojo);color:#fff}
+.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;background:var(--rojo);color:#fff;cursor:pointer}
+.btn.sec{background:#fff;color:var(--rojo);border:1px solid var(--rojo)}.btn.gris{background:#e7eaef;color:var(--tx)}.btn:disabled{opacity:.5}
+.btn.sm{padding:7px 11px;font-size:12.5px;border-radius:8px}.btn.full{width:100%}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row.sb{justify-content:space-between}
+nav.bar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav.bar button{flex:1;border:0;background:none;height:var(--nav);color:#7c8593;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+nav.bar button .i{font-size:22px;line-height:1}nav.bar button.on{color:var(--rojo)}
+.max{max-width:560px;margin:0 auto}
+table.pos{width:100%;border-collapse:collapse;font-size:12.5px}.pos th{color:var(--tx3);font-weight:600;text-align:center;padding:4px 3px;font-size:11px}.pos td{padding:7px 3px;text-align:center;border-top:1px solid var(--bd)}
+.pos td.n{text-align:left}.pos tr.clas td:first-child{box-shadow:inset 4px 0 0 var(--ok)}.pos tr.yo{background:#fff5d6}.pos td b{font-weight:800}
+.chips{display:flex;gap:6px;overflow:auto;padding:10px 12px 2px}.chips button{flex:none;border:1px solid var(--bd);background:#fff;border-radius:99px;padding:6px 12px;font-weight:700;color:var(--tx2);font-size:12.5px}.chips button.on{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.hero{background:linear-gradient(135deg,#0b1220,#1a2a4d);color:#fff;margin:12px;border-radius:14px;padding:16px;text-align:center}
+.hero .big{font-weight:900;font-size:20px;letter-spacing:.02em;line-height:1.1}.hero .sub{color:#9fb0cc;font-size:12px;margin-top:6px}
+.kpis{display:flex;gap:8px;margin-top:12px}.kpis div{flex:1;background:rgba(255,255,255,.08);border-radius:10px;padding:8px 4px}.kpis b{display:block;font-size:18px}.kpis span{font-size:10.5px;color:#9fb0cc}
+.list .it{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--bd)}.list .it:first-child{border-top:0}
+.list .it .fl{font-size:24px}.list .it .g{flex:1;min-width:0}.list .it .g b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.list .it .g span{color:var(--tx3);font-size:12px}
+.mrow{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--bd);cursor:pointer}.mrow:first-child{border-top:0}
+.mrow .tm{flex:1;min-width:0;font-weight:700;display:flex;align-items:center;gap:6px}.mrow .tm span.n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .sc{min-width:74px;text-align:center;font-weight:800}.mrow .sc small{display:block;font-weight:600;color:var(--tx3);font-size:10.5px}
+.mrow.b{flex-direction:row-reverse}
+.sheet{position:fixed;inset:0;z-index:200;background:rgba(10,14,22,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet .in{background:#fff;width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:88vh;overflow:auto}
+.sheet h3{margin:0 0 4px;font-size:17px}.sheet .x{float:right;border:0;background:#eceff3;border-radius:99px;width:30px;height:30px;font-size:16px}
+input.in,select.in,textarea.in{width:100%;border:1px solid var(--bd);border-radius:10px;padding:11px 12px;font-size:15px;background:#fff;color:var(--tx)}
+label.l{display:block;font-size:12px;color:var(--tx2);margin:10px 0 4px;font-weight:600}
+.msg{margin:10px 12px;padding:10px 12px;border-radius:10px;background:#fff1cf;color:#6b4d00;font-size:13px}.msg.bad{background:#fde1e1;color:#8a1b1b}.msg.ok{background:#dff5e8;color:#0f6a37}
+.sub2{color:var(--tx3);font-size:12px}
+#login{position:fixed;inset:0;z-index:100;background:#0b1220;overflow:auto;padding:22px 16px}
+#login .box{max-width:420px;margin:0 auto}
+#login .brand{color:#9fb0cc;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-align:center;margin:8px 0 2px}
+#login h1{color:#fff;text-align:center;font-size:21px;margin:0 0 4px;line-height:1.15}
+#login .s{color:#7f8fb0;text-align:center;font-size:12.5px;margin-bottom:16px}
+#login .pl{background:#111a2e;border:1px solid #1e2b47;border-radius:12px;max-height:46vh;overflow:auto;margin:10px 0}
+#login .pl button{display:flex;width:100%;gap:10px;align-items:center;background:none;border:0;border-bottom:1px solid #1e2b47;color:#e8edf7;padding:10px 12px;text-align:left;font-size:14px}
+#login .pl button:last-child{border-bottom:0}#login .pl small{color:#7f8fb0;margin-left:auto}
+#login input{width:100%;border:1px solid #1e2b47;border-radius:10px;padding:12px;background:#0e1626;color:#fff;font-size:16px}
+#login .pin{letter-spacing:.5em;text-align:center;font-size:22px}
+#login .err{color:#ff8a8a;font-size:13px;margin:8px 0;min-height:18px;text-align:center}
+#login .lk{color:#5FB0E8;text-align:center;margin-top:14px;font-size:13px;text-decoration:underline;cursor:pointer}
+.hide{display:none!important}
+#toast{position:fixed;left:50%;bottom:calc(var(--nav) + 20px);transform:translateX(-50%);background:#14181f;color:#fff;padding:10px 16px;border-radius:99px;font-weight:600;z-index:300;font-size:13px;max-width:90vw}
+#upd{position:fixed;left:12px;right:12px;bottom:calc(var(--nav) + 12px);background:var(--rojo);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;z-index:250}
+/* IDENTIDAD FRIGURSO: splash (puro CSS, se va solo) */
+#fg-splash{position:fixed;inset:0;z-index:9000;background:#0b1220;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;animation:fg-splash-out .6s ease 2.4s forwards}
+.fg-sash{position:absolute;width:130vw;height:22vh;max-height:170px;background:linear-gradient(90deg,#d7263d 0%,#d7263d 92%,#5fb0e8 100%);transform:rotate(-22deg) translateX(-140vw);top:46%;left:0;margin-top:-11vh;box-shadow:0 0 60px rgba(215,38,61,.3);animation:fg-sash-sweep 1.3s cubic-bezier(.16,.8,.24,1) both}
+@keyframes fg-sash-sweep{0%{transform:rotate(-22deg) translateX(-140vw)}55%{transform:rotate(-22deg) translateX(0)}100%{transform:rotate(-22deg) translateX(0)}}
+@keyframes fg-splash-out{to{opacity:0;pointer-events:none;visibility:hidden}}
+.fg-wordmark{position:relative;z-index:5;font-weight:800;font-stretch:condensed;font-size:min(11vw,42px);letter-spacing:.02em;color:#f5f7fa;text-transform:uppercase;opacity:0;transform:translateY(10px);animation:fg-word-in .5s ease .85s both}
+@keyframes fg-word-in{to{opacity:1;transform:translateY(0)}}
+.fg-tagline{position:relative;z-index:5;font-family:monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9fb0cc;margin-top:8px;text-align:center;opacity:0;animation:fg-word-in .5s ease 1.05s both}
+@media (prefers-reduced-motion:reduce){.fg-sash{animation:none;transform:rotate(-22deg) translateX(0)}.fg-wordmark,.fg-tagline{animation:none;opacity:1;transform:none}#fg-splash{animation-delay:.1s}}
+</style></head><body>
+
+<div id="fg-splash" aria-hidden="true"><div class="fg-sash"></div><div class="fg-wordmark">Frigurso</div><div class="fg-tagline">FootGolf · Mundialito Elite 2026</div></div>
+
+<div id="login" class="hide"><div class="box">
+ <div class="brand">Frigurso FootGolf</div><h1>Mundialito Match Play<br>Elite 2026</h1><div class="s">Elegí tu nombre y poné el PIN de 4 dígitos que te pasó la organización.</div>
+ <div id="lg1"><input id="lgq" placeholder="Buscá tu nombre o tu país…" autocomplete="off"><div class="pl" id="lgl"></div><div class="lk" id="lgesp">Entrar solo para mirar (espectador)</div></div>
+ <div id="lg2" class="hide"><div id="lgwho" style="color:#fff;text-align:center;font-size:18px;font-weight:800;margin:6px 0 10px"></div><input id="lgpin" class="pin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><div class="err" id="lgerr"></div><button class="btn full" id="lgok">Entrar</button><div class="lk" id="lgback">← No soy yo</div></div>
+ <div class="err" id="lgerr0"></div>
+</div></div>
+
+<div id="app" class="hide">
+ <header class="top"><div class="t">
+  <svg class="logo" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff"/><circle cx="32" cy="32" r="26" fill="#D7263D"/><path d="M18 40 L46 24" stroke="#5FB0E8" stroke-width="7" stroke-linecap="round"/><circle cx="32" cy="32" r="8" fill="#fff"/><path d="M32 26l5 4-2 6h-6l-2-6z" fill="#14181f"/></svg>
+  <div>MUNDIALITO ELITE 2026<small>FRIGURSO FOOTGOLF · MATCH PLAY</small></div><div class="sp"></div><div class="yo" id="yo" onclick="go('mas')"></div></div></header>
+ <div id="msgbar"></div>
+ <main id="main"></main>
+</div>
+<nav class="bar hide" id="nav">
+ <button data-t="torneo"><span class="i">🏆</span>Torneo</button>
+ <button data-t="pos"><span class="i">📊</span>Posiciones</button>
+ <button data-t="pron"><span class="i">🎯</span>Pronósticos</button>
+ <button data-t="fix"><span class="i">📅</span>Fixture</button>
+ <button data-t="mas"><span class="i">⋯</span>Más</button>
+</nav>
+<div id="sheet" class="sheet hide"><div class="in" id="sheetIn"></div></div>
+<div id="toast" class="hide"></div>
+
+<script>
+'use strict';
+/* ========================= configuración ========================= */
+const CFG = window.MM_CFG || {URL:'__SB_URL__', KEY:'__SB_KEY__'};
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = {players:[],by:{},matches:[],mby:{},cfg:{},picks:{},rank:[],ses:null,admin:null,tab:'torneo',ri:0,riSet:false,posTab:'grupos',grp:'*',fil:'todos',cargado:false,err:'',perfil:null};
+const RONDAS = [
+ {k:'G1',fase:['G'],n:1,t:'Fase de grupos · Fecha 1'},{k:'G2',fase:['G'],n:2,t:'Fase de grupos · Fecha 2'},{k:'G3',fase:['G'],n:3,t:'Fase de grupos · Fecha 3'},
+ {k:'R32',fase:['R32'],t:'16avos de final'},{k:'R16',fase:['R16'],t:'Octavos de final'},{k:'QF',fase:['QF'],t:'Cuartos de final'},{k:'SF',fase:['SF'],t:'Semifinales'},{k:'F',fase:['T3','F'],t:'Final y 3er puesto'}];
+const FASE_N = {G:'Grupos',R32:'16avos',R16:'Octavos',QF:'Cuartos',SF:'Semifinal',T3:'3er puesto',F:'Final'};
+const PTS = {G:1,R32:2,R16:3,QF:4,SF:5,T3:3,F:6};
+const rondaDe = m => RONDAS.find(r=>r.fase.includes(m.fase) && (m.fase!=='G'||r.n===m.fecha_n));
+const delRonda = r => S.matches.filter(m=>r.fase.includes(m.fase) && (r.n==null||m.fecha_n===r.n)).sort((a,b)=>a.id-b.id);
+
+/* ========================= red ========================= */
+const HD = ()=>({apikey:CFG.KEY,Authorization:'Bearer '+CFG.KEY});
+async function rest(t,qs){const r=await fetch(`${CFG.URL}/rest/v1/${t}?${qs||'select=*'}`,{headers:HD()});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
+async function rpc(fn,args){const r=await fetch(`${CFG.URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},HD()),body:JSON.stringify(args||{})});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
+
+/* ========================= datos ========================= */
+async function cargar(silencio){
+  try{
+    const [pl,ma,cf]=await Promise.all([rest('mm_players','select=*&order=id'),rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);
+    S.players=pl;S.by={};pl.forEach(p=>S.by[p.id]=p);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);
+    S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);
+    S.rank=await rpc('mm_ranking');
+    if(S.ses&&S.ses.id){const r=await rpc('mm_mis_picks',{p_player:S.ses.id,p_pin:S.ses.pin});if(r.ok)S.picks=r.picks;}
+    S.cargado=true;S.err='';
+    if(!S.riSet){S.ri=rondaActual();S.riSet=true;}
+  }catch(e){S.err='Sin conexión con el servidor. Mostrando lo último que se vio.';if(!silencio&&!S.cargado)S.err='No pude conectarme al servidor. Revisá tu internet.';}
+  pintar();
+}
+function rondaActual(){for(let i=0;i<RONDAS.length;i++){const l=delRonda(RONDAS[i]);if(l.some(m=>m.estado!=='confirmado'&&(m.a_id||m.fase==='G')))return i;}return RONDAS.length-1}
+
+/* ========================= utilidades de partido ========================= */
+function slotTxt(s){if(!s)return'—';let m;if(m=/^([12])([A-P])$/.exec(s))return m[1]+'º Grupo '+m[2];if(m=/^W:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Ganador '+(x?FASE_N[x.fase]+' '+x.orden:'?')}if(m=/^L:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Perdedor '+(x?FASE_N[x.fase]+' '+x.orden:'?')}return s}
+function lado(m,w){const id=m[w+'_id'],p=id&&S.by[id];return p?{p,fl:p.bandera,cd:p.codigo,nm:p.nombre,pais:p.pais}:{p:null,fl:'❔',cd:'???',nm:slotTxt(m['slot_'+w])||'Por definir',pais:''}}
+function lbl(m){if(m.fase==='G')return 'Grupo '+m.grupo+' · Fecha '+m.fecha_n;return FASE_N[m.fase]+(['T3','F'].includes(m.fase)?'':' '+m.orden)}
+function fechaTxt(m){if(!m.fecha)return 'Fecha a coordinar';const d=new Date(m.fecha);const dias=['dom.','lun.','mar.','mié.','jue.','vie.','sáb.'];return dias[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' - '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function resTxt(m){if(m.estado!=='confirmado'&&m.estado!=='cargado')return'';if(m.empate)return 'Empate';const w=S.by[m.ganador_id];return (w?w.codigo:'?')+' gana '+m.margen+' UP'}
+function abierto(m){return m.estado==='pendiente'&&!m.cerrado&&m.a_id&&m.b_id&&!(m.fecha&&new Date()>=new Date(m.fecha))}
+function soyDe(m){return S.ses&&S.ses.id&&(m.a_id===S.ses.id||m.b_id===S.ses.id)}
+function rival(m){return S.by[m.a_id===S.ses.id?m.b_id:m.a_id]}
+function pickRes(m){return m.empate?'E':(m.ganador_id===m.a_id?'A':'B')}
+function toast(t){const e=$('toast');e.textContent=t;e.classList.remove('hide');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.add('hide'),2600)}
+
+/* ========================= posiciones ========================= */
+function tabla(g){
+  const ps=S.players.filter(p=>p.grupo===g),ms=S.matches.filter(m=>m.fase==='G'&&m.grupo===g);
+  const st={};ps.forEach(p=>st[p.id]={p,pj:0,pg:0,pe:0,pp:0,dif:0,pts:0});
+  ms.filter(m=>m.estado==='confirmado').forEach(m=>{const a=st[m.a_id],b=st[m.b_id];if(!a||!b)return;a.pj++;b.pj++;
+    if(m.empate){a.pe++;b.pe++;a.pts++;b.pts++}else{const w=st[m.ganador_id],l=m.ganador_id===m.a_id?b:a;w.pg++;l.pp++;w.pts+=3;w.dif+=m.margen;l.dif-=m.margen}});
+  let l=Object.values(st).sort((x,y)=>y.pts-x.pts||y.dif-x.dif||y.pg-x.pg||x.p.id-y.p.id);
+  const ov=S.cfg.desempate&&S.cfg.desempate[g];const completo=ms.length===6&&ms.every(m=>m.estado==='confirmado');
+  if(ov&&completo)l=ov.map(id=>st[id]).filter(Boolean);
+  return {l,completo,jugados:ms.filter(m=>m.estado==='confirmado').length};
+}
+function grupos(){return [...new Set(S.players.map(p=>p.grupo).filter(Boolean))].sort()}
+function empateCritico(g){const t=tabla(g);if(!t.completo)return false;const a=t.l[1],b=t.l[2];return a&&b&&a.pts===b.pts&&a.dif===b.dif&&a.pg===b.pg}
+
+/* ========================= pantallas ========================= */
+function pintar(){
+  if(!S.cargado){$('main').innerHTML='<div class="msg">Cargando…</div>';return}
+  $('yo').textContent=S.ses?(S.ses.id?(S.by[S.ses.id]?S.by[S.ses.id].bandera+' '+S.by[S.ses.id].nombre.split(' ')[0]:'Yo'):'👀 Espectador'):'';
+  $('msgbar').innerHTML=S.err?`<div class="msg bad">${esc(S.err)}</div>`:'';
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
+  const f={torneo:vTorneo,pos:vPos,pron:vPron,fix:vFix,mas:vMas}[S.tab];$('main').innerHTML=f();
+}
+function go(t){S.tab=t;pintar();window.scrollTo(0,0)}
+function selRonda(){const r=RONDAS[S.ri];return `<div class="selr"><button onclick="rondaMas(-1)">‹</button><div class="mid">${esc(r.t)} ▾</div><button onclick="rondaMas(1)">›</button></div>`}
+function rondaMas(d){S.ri=Math.max(0,Math.min(RONDAS.length-1,S.ri+d));pintar()}
+
+function cardBase(m,cuerpo,extra){return `<div class="card"><div class="meta"><span>${esc(fechaTxt(m))}<br><b>${esc(lbl(m))}</b></span><span>${extra||''}</span></div>${cuerpo}</div>`}
+
+function vPron(){
+  const r=RONDAS[S.ri],ms=delRonda(r);
+  if(!S.ses||!S.ses.id)return selRonda()+'<div class="msg">Para pronosticar tenés que entrar con tu nombre y PIN. (Estás como espectador.)</div>'+listaPron(ms,true);
+  const abiertos=ms.filter(abierto),hechos=ms.filter(m=>S.picks[m.id]).length,tot=ms.filter(m=>m.a_id&&m.b_id).length;
+  return selRonda()+`<div class="prog"><span>Pronósticos</span><b>${hechos}/${tot}</b></div>`+(ms.length?listaPron(ms,false):'<div class="msg">Todavía no hay partidos en esta ronda.</div>');
+}
+function listaPron(ms,ro){
+  const pend=ms.filter(m=>m.estado!=='confirmado'),jug=ms.filter(m=>m.estado==='confirmado');
+  let h='';if(pend.length)h+='<h2 class="sec">Próximos partidos</h2>'+pend.map(m=>cardPron(m,ro)).join('');
+  if(jug.length)h+='<h2 class="sec">Jugados</h2>'+jug.map(m=>cardPron(m,ro)).join('');return h||''}
+function cardPron(m,ro){
+  const A=lado(m,'a'),Bq=lado(m,'b'),pk=S.picks[m.id],can=!ro&&abierto(m),fin=m.estado==='confirmado',res=fin?pickRes(m):null;
+  const blk=(w,l)=>{let c='opt';if(fin&&pk===w)c+=(pk===res?' ok':' mal');else if(pk===w)c+=' on';if(!can)c+=' dis';
+    return `<div class="${c}" ${can?`onclick="pick(${m.id},'${w}')"`:''}><span style="font-size:26px">${l.fl}</span><span>${esc(l.cd)}</span></div>`};
+  const mid=m.fase==='G'?`<div class="opt ${pk==='E'?(fin?(res==='E'?'ok':'mal'):'on'):''} ${can?'':'dis'}" style="flex:.7" ${can?`onclick="pick(${m.id},'E')"`:''}><span style="font-size:20px">＝</span><small>Empate</small></div>`:'';
+  const nota=fin?`<div class="sub2" style="text-align:center;margin-top:8px">${esc(resTxt(m))}${pk?(pk===res?` · <b style="color:var(--ok)">+${PTS[m.fase]} pts</b>`:' · <b style="color:var(--mal)">0 pts</b>'):' · sin pronóstico'}</div>`:
+    (!can&&!ro&&m.a_id&&m.b_id?`<div class="sub2" style="text-align:center;margin-top:8px">🔒 Pronósticos cerrados${pk?'':' · no pronosticaste'}</div>`:'');
+  const extra=fin?'<span class="tag ok">Final</span>':(m.estado==='cargado'?'<span class="tag warn">Por confirmar</span>':(can?'':'🔒'));
+  return cardBase(m,`<div class="pr"><div class="side"><span class="fl">${A.fl}</span><span class="cd">${esc(A.cd)}</span><span class="nm">${esc(A.nm)}</span></div>${'<div style="width:6px"></div>'}<div style="display:flex;gap:6px;flex:2.2">${blk('A',A)}${mid}${blk('B',Bq)}</div><div class="side"><span class="fl">${Bq.fl}</span><span class="cd">${esc(Bq.cd)}</span><span class="nm">${esc(Bq.nm)}</span></div></div>${nota}`,extra);
+}
+async function pick(mid,w){
+  const m=S.mby[mid];if(!abierto(m)){toast('Pronósticos cerrados');return}
+  const ant=S.picks[mid];S.picks[mid]=w;pintar();
+  try{const r=await rpc('mm_set_pick',{p_player:S.ses.id,p_pin:S.ses.pin,p_match:mid,p_pick:w});if(!r.ok){if(ant)S.picks[mid]=ant;else delete S.picks[mid];toast(r.error||'No se pudo guardar');await cargar(true)}else toast('✔ Guardado')}
+  catch(e){if(ant)S.picks[mid]=ant;else delete S.picks[mid];pintar();toast('Sin conexión: no se guardó')}
+}
+
+function filaPartido(m){
+  const A=lado(m,'a'),Bq=lado(m,'b'),r=resTxt(m);
+  const est=m.estado==='cargado'?'<span class="tag warn">Por confirmar</span>':m.estado==='disputado'?'<span class="tag bad">En disputa</span>':'';
+  const gana=id=>m.estado==='confirmado'&&m.ganador_id===id?'style="color:var(--ok)"':'';
+  return `<div class="mrow" onclick="detalle(${m.id})"><div class="tm" ${gana(m.a_id)}><span style="font-size:22px">${A.fl}</span><span class="n">${esc(A.p?A.p.nombre:A.nm)}</span></div><div class="sc">${r?esc(r):'vs'}<small>${esc(m.estado==='confirmado'?'Final':(m.fecha?fechaTxt(m).split(' - ')[0]:'a coordinar'))}</small>${est}</div><div class="tm" style="flex-direction:row-reverse;text-align:right" ${gana(m.b_id)}><span style="font-size:22px">${Bq.fl}</span><span class="n">${esc(Bq.p?Bq.p.nombre:Bq.nm)}</span></div></div>`}
+
+function vFix(){
+  const r=RONDAS[S.ri];let ms=delRonda(r);
+  if(S.fil==='mios')ms=ms.filter(soyDe);if(S.fil==='pend')ms=ms.filter(m=>m.estado!=='confirmado');if(S.fil==='jug')ms=ms.filter(m=>m.estado==='confirmado');
+  const ch=[['todos','Todos'],['mios','Mis partidos'],['pend','Pendientes'],['jug','Jugados']].map(([k,t])=>`<button class="${S.fil===k?'on':''}" onclick="S.fil='${k}';pintar()">${t}</button>`).join('');
+  let cuerpo='';
+  if(r.fase[0]==='G'){const porG={};ms.forEach(m=>(porG[m.grupo]=porG[m.grupo]||[]).push(m));cuerpo=Object.keys(porG).sort().map(g=>`<div class="card"><div class="meta"><b>Grupo ${g}</b><span class="sub2">${r.t.split('·')[1]}</span></div>${porG[g].map(filaPartido).join('')}</div>`).join('')}
+  else cuerpo=ms.length?`<div class="card">${ms.map(filaPartido).join('')}</div>`:'';
+  return selRonda()+`<div class="chips">${ch}</div>`+(cuerpo||'<div class="msg">No hay partidos para mostrar con este filtro.</div>');
+}
+
+function detalle(id){
+  const m=S.mby[id],A=lado(m,'a'),Bq=lado(m,'b');let h=`<button class="x" onclick="cerrar()">✕</button><h3>${esc(lbl(m))}</h3><div class="sub2">${esc(fechaTxt(m))}</div>
+  <div class="pr" style="margin:16px 0"><div class="side"><span class="fl">${A.fl}</span><span class="cd">${esc(A.cd)}</span><span class="nm">${esc(A.nm)}</span></div><div style="font-weight:900;font-size:18px">${esc(resTxt(m)||'vs')}</div><div class="side"><span class="fl">${Bq.fl}</span><span class="cd">${esc(Bq.cd)}</span><span class="nm">${esc(Bq.nm)}</span></div></div>`;
+  if(m.estado==='cargado')h+=`<div class="msg">Resultado cargado por ${esc((S.by[m.cargado_por]||{}).nombre||'un jugador')}. Falta que lo confirme el rival.</div>`;
+  if(m.estado==='disputado')h+='<div class="msg bad">El rival no está de acuerdo. La organización lo resuelve.</div>';
+  if(m.estado==='confirmado')h+='<div class="msg ok">Resultado confirmado ✔</div>';
+  if(soyDe(m)&&m.a_id&&m.b_id){
+    if(['pendiente','disputado'].includes(m.estado))h+=`<button class="btn full" onclick="formRes(${id})">Cargar resultado</button>`;
+    if(m.estado==='cargado'&&m.cargado_por!==S.ses.id)h+=`<div class="row"><button class="btn" style="flex:1" onclick="conf(${id},true)">✔ Confirmar</button><button class="btn gris" style="flex:1" onclick="conf(${id},false)">No estoy de acuerdo</button></div>`;
+  }
+  if(S.admin){h+=`<div class="sub2" style="margin-top:14px">ORGANIZACIÓN</div><div class="row">${m.a_id&&m.b_id?`<button class="btn sm sec" onclick="formRes(${id},true)">Cargar / corregir</button>`:''}${m.estado!=='pendiente'?`<button class="btn sm gris" onclick="anular(${id})">Anular resultado</button>`:''}</div>`}
+  h+=`<div id="pkd" class="sub2" style="margin-top:12px"></div>`;
+  abrirSheet(h);
+  if(m.a_id&&m.b_id&&(m.cerrado||m.estado!=='pendiente'||(m.fecha&&new Date()>=new Date(m.fecha))))rpc('mm_picks_partido',{p_match:id}).then(pk=>{if(!pk||!pk.length||!$('pkd'))return;const c={A:0,E:0,B:0};pk.forEach(x=>c[x.pick]++);const t=pk.length;const pc=v=>Math.round(v*100/t)+'%';
+    $('pkd').innerHTML=`🎯 Pronósticos (${t}): <b>${A.cd} ${pc(c.A)}</b>${m.fase==='G'?` · Empate ${pc(c.E)}`:''} · <b>${Bq.cd} ${pc(c.B)}</b>`}).catch(()=>{});
+}
+function abrirSheet(h){$('sheetIn').innerHTML=h;$('sheet').classList.remove('hide')}
+function cerrar(){$('sheet').classList.add('hide')}
+$('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')cerrar()});
+
+function formRes(id,adm){
+  const m=S.mby[id],A=lado(m,'a'),Bq=lado(m,'b');window._fr={id,adm,w:null};
+  abrirSheet(`<button class="x" onclick="cerrar()">✕</button><h3>Resultado del partido</h3><div class="sub2">${esc(lbl(m))} · tocá quién ganó</div>
+  <div class="row" style="margin:14px 0"><div class="opt" id="rA" style="flex:1" onclick="elegirW('A')"><span style="font-size:30px">${A.fl}</span>${esc(A.cd)}<small>${esc(A.nm)}</small></div>${m.fase==='G'?`<div class="opt" id="rE" style="flex:.7" onclick="elegirW('E')"><span style="font-size:22px">＝</span><small>Empate</small></div>`:''}<div class="opt" id="rB" style="flex:1" onclick="elegirW('B')"><span style="font-size:30px">${Bq.fl}</span>${esc(Bq.cd)}<small>${esc(Bq.nm)}</small></div></div>
+  <div id="mgw"><label class="l">¿Por cuántos hoyos ganó? (ej. 3 si fue 3&2)</label><select class="in" id="mg">${[...Array(18)].map((_,i)=>`<option value="${i+1}">${i+1} UP</option>`).join('')}</select></div>
+  ${m.fase!=='G'?'<div class="sub2" style="margin-top:8px">En eliminatorias no hay empate: se define con hoyos extra.</div>':''}
+  <button class="btn full" style="margin-top:14px" onclick="enviarRes()">${adm?'Guardar como organización':'Enviar resultado'}</button>
+  ${adm?'':'<div class="sub2" style="margin-top:8px">Tu rival lo tiene que confirmar para que cuente.</div>'}<div class="err" id="frerr" style="color:#c00;margin-top:8px"></div>`);
+}
+function elegirW(w){_fr.w=w;['A','E','B'].forEach(k=>{const e=$('r'+k);if(e)e.classList.toggle('on',k===w)});$('mgw').classList.toggle('hide',w==='E')}
+async function enviarRes(){
+  const f=_fr,m=S.mby[f.id];if(!f.w){$('frerr').textContent='Elegí quién ganó (o empate)';return}
+  const emp=f.w==='E',gan=emp?null:(f.w==='A'?m.a_id:m.b_id),mg=emp?0:+$('mg').value;
+  try{const r=f.adm?await rpc('mm_admin_resultado',{p_apin:S.admin,p_match:f.id,p_ganador:gan,p_empate:emp,p_margen:mg}):await rpc('mm_cargar_resultado',{p_player:S.ses.id,p_pin:S.ses.pin,p_match:f.id,p_ganador:gan,p_empate:emp,p_margen:mg});
+    if(!r.ok){$('frerr').textContent=r.error;return}cerrar();toast(f.adm?'✔ Guardado':'✔ Enviado: falta que lo confirme tu rival');await cargar(true)}catch(e){$('frerr').textContent='Sin conexión'}
+}
+async function conf(id,ok){try{const r=await rpc('mm_confirmar',{p_player:S.ses.id,p_pin:S.ses.pin,p_match:id,p_ok:ok});if(!r.ok){toast(r.error);return}cerrar();toast(ok?'✔ Confirmado':'Marcado en disputa');await cargar(true)}catch(e){toast('Sin conexión')}}
+async function anular(id){if(!confirm('¿Anular el resultado de este partido?'))return;const r=await rpc('mm_admin_anular',{p_apin:S.admin,p_match:id});if(!r.ok){alert(r.error);return}cerrar();toast('Anulado');await cargar(true)}
+
+function vPos(){
+  const tabs=`<div class="chips"><button class="${S.posTab==='grupos'?'on':''}" onclick="S.posTab='grupos';pintar()">Grupos</button><button class="${S.posTab==='prode'?'on':''}" onclick="S.posTab='prode';pintar()">Prode (pronósticos)</button></div>`;
+  if(S.posTab==='prode'){
+    const rk=S.rank.slice(),yo=S.ses&&S.ses.id,pos=rk.findIndex(x=>x.player_id===yo)+1;
+    let h=tabs+(yo?`<div class="prog"><span>Tu puesto</span><b>${pos?pos+'º de '+rk.length:'sin puntos todavía'}</b></div>`:'');
+    h+=`<div class="card"><div class="list">${rk.length?rk.map((x,i)=>{const p=S.by[x.player_id]||{};return `<div class="it" ${x.player_id===yo?'style="background:#fff5d6;margin:0 -12px;padding-left:12px;padding-right:12px"':''}><b style="width:26px;color:var(--tx3)">${i+1}</b><span class="fl">${p.bandera||''}</span><div class="g"><b>${esc(p.nombre)}</b><span>${x.aciertos} aciertos de ${x.jugados}</span></div><b style="font-size:17px">${x.puntos}</b></div>`}).join(''):'<div class="sub2">Todavía no hay partidos jugados con pronósticos.</div>'}</div></div>
+    <div class="sub2" style="margin:8px 16px">Puntos por acierto: grupos 1 · 16avos 2 · octavos 3 · cuartos 4 · semis 5 · 3er puesto 3 · final 6.</div>`;return h}
+  const gs=grupos();if(!gs.length)return tabs+'<div class="msg">Los grupos todavía no se sortearon. Cuando la organización haga el sorteo, vas a ver las tablas acá.</div>';
+  const yoG=S.ses&&S.ses.id&&S.by[S.ses.id]&&S.by[S.ses.id].grupo;
+  const chips=`<div class="chips"><button class="${S.grp==='*'?'on':''}" onclick="S.grp='*';pintar()">Todos</button>${yoG?`<button class="${S.grp==='mi'?'on':''}" onclick="S.grp='mi';pintar()">Mi grupo</button>`:''}${gs.map(g=>`<button class="${S.grp===g?'on':''}" onclick="S.grp='${g}';pintar()">${g}</button>`).join('')}</div>`;
+  const ver=S.grp==='*'?gs:S.grp==='mi'?[yoG]:[S.grp];
+  return tabs+chips+ver.map(g=>{const t=tabla(g);return `<div class="card"><div class="meta"><b>GRUPO ${g}</b><span>${t.jugados}/6 partidos</span></div><table class="pos"><tr><th></th><th style="text-align:left">Jugador</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>Dif</th><th>Pts</th></tr>${t.l.map((r,i)=>`<tr class="${i<2?'clas':''} ${S.ses&&r.p.id===S.ses.id?'yo':''}"><td>${i+1}</td><td class="n">${r.p.bandera} <b>${esc(r.p.codigo)}</b> <span class="sub2">${esc(r.p.nombre.split(' ')[0])}</span></td><td>${r.pj}</td><td>${r.pg}</td><td>${r.pe}</td><td>${r.pp}</td><td>${r.dif>0?'+':''}${r.dif}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>`}).join('')+'<div class="sub2" style="margin:8px 16px">🟩 Los 2 primeros de cada grupo pasan a 16avos. Desempate: puntos, diferencia de hoyos (UP) y victorias.</div>';
+}
+
+function vTorneo(){
+  const g=S.matches.filter(m=>m.fase==='G'),conf=S.matches.filter(m=>m.estado==='confirmado').length,tot=S.matches.length||1;
+  let h=`<div class="hero"><div class="big">1º MUNDIALITO<br>MATCH PLAY ELITE 2026</div><div class="sub">64 jugadores · 16 grupos · eliminación directa</div><div class="kpis"><div><b>${conf}</b><span>jugados</span></div><div><b>${S.matches.filter(m=>['cargado','disputado'].includes(m.estado)).length}</b><span>por confirmar</span></div><div><b>${S.matches.filter(m=>m.estado==='pendiente'&&m.a_id&&m.b_id).length}</b><span>pendientes</span></div></div></div>`;
+  if(S.ses&&S.ses.id){
+    const mios=S.matches.filter(m=>soyDe(m)&&m.estado!=='confirmado').sort((a,b)=>a.id-b.id);
+    h+='<h2 class="sec">Mis partidos</h2>';
+    h+=mios.length?mios.map(m=>{const r=rival(m);const acc=['pendiente','disputado'].includes(m.estado)?`<button class="btn sm" onclick="event.stopPropagation();formRes(${m.id})">Cargar resultado</button>`:(m.cargado_por!==S.ses.id?`<button class="btn sm" onclick="event.stopPropagation();detalle(${m.id})">Confirmar resultado</button>`:'<span class="tag warn">Esperando a tu rival</span>');
+      return `<div class="card" onclick="detalle(${m.id})"><div class="meta"><span>${esc(lbl(m))}</span><span>${esc(fechaTxt(m))}</span></div><div class="row sb"><div><b style="font-size:16px">vs ${r?r.bandera+' '+esc(r.nombre):esc(slotTxt(m.a_id===S.ses.id?m.slot_b:m.slot_a))}</b><div class="sub2">${r?esc(r.pais):'Rival por definir'}</div></div>${m.a_id&&m.b_id?acc:''}</div></div>`}).join(''):'<div class="msg ok">No tenés partidos pendientes ahora. ¡Atento a la próxima ronda!</div>';
+  }
+  const ko=['R32','R16','QF','SF','T3','F'].map(f=>({f,l:S.matches.filter(m=>m.fase===f).sort((a,b)=>a.id-b.id)}));
+  h+='<h2 class="sec">Cuadro de eliminación</h2>'+ko.map(k=>`<div class="card"><div class="meta"><b>${esc(k.f==='T3'?'3er puesto':k.f==='F'?'Final':(RONDAS.find(r=>r.k===k.f)||{}).t)}</b><span class="sub2">${k.l.filter(m=>m.estado==='confirmado').length}/${k.l.length}</span></div>${k.l.map(filaPartido).join('')}</div>`).join('');
+  return h;
+}
+
+function vMas(){
+  const yo=S.ses&&S.ses.id&&S.by[S.ses.id];
+  let h=`<div class="card">${yo?`<div class="row"><span style="font-size:40px">${yo.bandera}</span><div><b style="font-size:17px">${esc(yo.nombre)}</b><div class="sub2">${esc(yo.pais)} · ${esc(yo.continente)}${yo.grupo?' · Grupo '+yo.grupo:''}</div></div></div>`:'<b>Estás mirando como espectador</b>'}<div class="row" style="margin-top:12px"><button class="btn gris sm" onclick="salir()">${yo?'Cerrar sesión':'Entrar con mi nombre'}</button><button class="btn gris sm" onclick="compartir()">Compartir la app</button></div></div>`;
+  h+=`<h2 class="sec">Participantes por continente</h2>`+['Europa','América','África','Asia','Oceanía'].map(c=>{const l=S.players.filter(p=>p.continente===c);return `<details class="card"><summary style="font-weight:800;cursor:pointer">${c} <span class="sub2">· ${l.length}</span></summary><div class="list" style="margin-top:8px">${l.map(p=>`<div class="it"><span class="fl">${p.bandera}</span><div class="g"><b>${esc(p.nombre)}</b><span>${esc(p.pais)}${p.grupo?' · Grupo '+p.grupo:''}</span></div></div>`).join('')}</div></details>`}).join('');
+  h+=`<h2 class="sec">Reglamento</h2><div class="card sub2" style="color:var(--tx)"><b>Formato:</b> 16 grupos de 4, todos contra todos (3 fechas). Victoria 3 pts, empate 1. Pasan los 2 primeros a 16avos y de ahí eliminación directa hasta la final (más partido por el 3er puesto).<br><br><b>Resultados:</b> los jugadores cargan el resultado de su partido y el rival lo confirma. Si hay desacuerdo, resuelve la organización.<br><br><b>Pronósticos:</b> elegí quién gana (en grupos también empate). Se cierran cuando empieza el partido o la organización los cierra. Puntos: grupos 1 · 16avos 2 · octavos 3 · cuartos 4 · semis 5 · 3er puesto 3 · final 6.</div>`;
+  h+=`<h2 class="sec">Organización</h2><div class="card">${S.admin?adminHTML():'<button class="btn sec full" onclick="adminLogin()">🔐 Entrar como organización</button>'}</div>`;
+  h+='<div class="sub2" style="text-align:center;margin:18px">Frigurso FootGolf · Mundialito Elite 2026</div>';return h;
+}
+function salir(){localStorage.removeItem('mm_ses');S.ses=null;S.picks={};location.reload()}
+async function compartir(){const d={title:'Mundialito Elite 2026',text:'Mundialito Match Play Elite 2026 · Frigurso FootGolf',url:location.href.split('#')[0]};try{if(navigator.share)await navigator.share(d);else{await navigator.clipboard.writeText(d.url);toast('Link copiado')}}catch(e){}}
+
+/* ========================= organización ========================= */
+async function adminLogin(){const p=prompt('Clave de organización:');if(!p)return;try{const r=await rpc('mm_admin_login',{p_pin:p});if(!r.ok){alert(r.error);return}S.admin=p;sessionStorage.setItem('mm_adm',p);pintar()}catch(e){alert('Sin conexión')}}
+function adminHTML(){
+  const sorteado=grupos().length>0,hayRes=S.matches.some(m=>m.fase==='G'&&m.estado!=='pendiente');
+  const crit=grupos().filter(empateCritico);
+  const resolver=S.matches.filter(m=>['cargado','disputado'].includes(m.estado));
+  return `<div class="row sb"><b>🔐 Organización</b><button class="btn gris sm" onclick="S.admin=null;sessionStorage.removeItem('mm_adm');pintar()">Salir</button></div>
+  <details open style="margin-top:10px"><summary><b>1. Sorteo de grupos</b></summary><div class="sub2" style="margin:6px 0">${sorteado?'Ya hay grupos armados.':'Reparte los 64 en 16 grupos cuidando que los continentes queden bien mezclados.'}</div>
+   <div class="row"><button class="btn sm" ${hayRes?'disabled':''} onclick="sortear()">🎲 ${sorteado?'Volver a sortear':'Sortear'}</button></div><div id="srt"></div></details>
+  <details style="margin-top:10px"><summary><b>2. PINs de los jugadores</b></summary><div class="sub2" style="margin:6px 0">Cada jugador entra con su nombre y un PIN de 4 dígitos. Se muestran UNA sola vez: copialos y mandalos por WhatsApp.</div>
+   <div class="row"><button class="btn sm" onclick="genPins(false)">Generar los que faltan</button><button class="btn sm gris" onclick="genPins(true)">Regenerar TODOS</button></div><div id="pins"></div></details>
+  <details style="margin-top:10px"><summary><b>3. Resultados por resolver</b> <span class="tag ${resolver.length?'warn':''}">${resolver.length}</span></summary>${resolver.length?resolver.map(m=>`<div style="margin:6px 0">${filaPartido(m)}</div>`).join(''):'<div class="sub2">No hay nada pendiente.</div>'}</details>
+  <details style="margin-top:10px"><summary><b>4. Fechas y cierre de pronósticos</b></summary>
+   <label class="l">Ronda</label><select class="in" id="afr">${RONDAS.map((r,i)=>`<option value="${i}" ${i===S.ri?'selected':''}>${esc(r.t)}</option>`).join('')}</select>
+   <label class="l">Fecha y hora de los partidos de esa ronda</label><input class="in" type="datetime-local" id="afd">
+   <div class="row" style="margin-top:8px"><button class="btn sm" onclick="adFecha()">Guardar fecha</button><button class="btn sm gris" onclick="adCerrar(true)">🔒 Cerrar pronósticos</button><button class="btn sm gris" onclick="adCerrar(false)">🔓 Abrir</button></div></details>
+  <details style="margin-top:10px"><summary><b>5. Desempates</b> <span class="tag ${crit.length?'warn':''}">${crit.length}</span></summary>${crit.length?crit.map(g=>{const t=tabla(g);return `<div style="margin:8px 0"><b>Grupo ${g}</b> <span class="sub2">empatan 2º y 3º</span><div class="row">${[0,1,2,3].map(i=>`<select class="in" style="width:auto" id="dq${g}${i}">${t.l.map(r=>`<option value="${r.p.id}" ${r.p.id===t.l[i].p.id?'selected':''}>${i+1}º ${esc(r.p.codigo)}</option>`).join('')}</select>`).join('')}<button class="btn sm" onclick="adDes('${g}')">Fijar</button></div></div>`}).join(''):'<div class="sub2">No hay empates que resolver.</div>'}</details>`;
+}
+function azar(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
+function mezclar(l){l=l.slice();for(let i=l.length-1;i>0;i--){const j=azar(i+1);[l[i],l[j]]=[l[j],l[i]]}return l}
+function sortear(){
+  const conts=['Europa','América','África','Asia','Oceanía'];let k=azar(16),asig=[];const G=[...Array(16)].map(()=>[]);
+  conts.forEach(c=>mezclar(S.players.filter(p=>p.continente===c)).forEach(p=>{G[k%16].push(p);k++}));
+  G.forEach((l,gi)=>mezclar(l).forEach((p,i)=>asig.push({player:p.id,grupo:String.fromCharCode(65+gi),pos:i+1})));
+  window._asig=asig;
+  $('srt').innerHTML=`<div class="sub2" style="margin:8px 0">Vista previa del sorteo:</div>`+G.map((l,gi)=>`<div style="margin:4px 0"><b>${String.fromCharCode(65+gi)}</b> ${asig.filter(a=>a.grupo===String.fromCharCode(65+gi)).map(a=>S.by[a.player].bandera+' '+S.by[a.player].codigo).join(' · ')}</div>`).join('')+`<div class="row" style="margin-top:8px"><button class="btn sm" onclick="guardarSorteo()">✔ Confirmar y guardar</button><button class="btn sm gris" onclick="sortear()">Otro sorteo</button></div>`;
+}
+async function guardarSorteo(){if(!confirm('Se arman los 96 partidos de grupos con este sorteo. ¿Confirmás?'))return;const r=await rpc('mm_admin_sorteo',{p_apin:S.admin,p_asig:window._asig});if(!r.ok){alert(r.error);return}toast('✔ Sorteo guardado');await cargar(true)}
+async function genPins(todos){if(todos&&!confirm('Esto INVALIDA los PIN actuales de todos. ¿Seguro?'))return;const r=await rpc('mm_admin_pins',{p_apin:S.admin,p_todos:todos});if(!r.ok){alert(r.error);return}
+  window._pins=r.pins;const url=location.href.split('#')[0].split('?')[0];
+  $('pins').innerHTML=r.pins.length?`<div class="row" style="margin:8px 0"><button class="btn sm" onclick="copiarPins()">📋 Copiar todos</button><button class="btn sm gris" onclick="csvPins()">⬇ Excel (CSV)</button></div>`+r.pins.map(x=>`<div class="row sb" style="border-top:1px solid var(--bd);padding:6px 0"><span>${esc((S.by[x.id]||{}).bandera||'')} ${esc(x.nombre)}</span><span><b style="letter-spacing:.15em">${x.pin}</b> <a class="btn sm gris" style="text-decoration:none" target="_blank" href="https://wa.me/?text=${encodeURIComponent(msgPin(x,url))}">WhatsApp</a></span></div>`).join(''):'<div class="sub2">Todos ya tienen PIN.</div>'}
+function msgPin(x,url){return `Hola ${x.nombre.split(' ')[0]}! Tu acceso al Mundialito Match Play Elite 2026 (Frigurso FootGolf):\n${url}\nElegí tu nombre (${x.nombre}) y poné el PIN: ${x.pin}`}
+function copiarPins(){const url=location.href.split('#')[0].split('?')[0];navigator.clipboard.writeText(_pins.map(x=>x.nombre+' ('+x.pais+'): '+x.pin).join('\n')+'\n\nLink: '+url).then(()=>toast('Copiado'))}
+function csvPins(){const b=new Blob(['﻿Nombre;País;PIN\r\n'+_pins.map(x=>[x.nombre,x.pais,x.pin].join(';')).join('\r\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pins_mundialito.csv';a.click()}
+async function adFecha(){const r=RONDAS[+$('afr').value],v=$('afd').value;if(!v){alert('Elegí fecha y hora');return}const f=r.fase;for(const fase of f){const x=await rpc('mm_admin_fecha',{p_apin:S.admin,p_fase:fase,p_fecha_n:r.n==null?null:r.n,p_fecha:new Date(v).toISOString()});if(!x.ok){alert(x.error);return}}toast('✔ Fecha guardada');await cargar(true)}
+async function adCerrar(c){const r=RONDAS[+$('afr').value];for(const fase of r.fase){const x=await rpc('mm_admin_cerrar',{p_apin:S.admin,p_fase:fase,p_fecha_n:r.n==null?null:r.n,p_cerrado:c});if(!x.ok){alert(x.error);return}}toast(c?'🔒 Pronósticos cerrados':'🔓 Pronósticos abiertos');await cargar(true)}
+async function adDes(g){const o=[0,1,2,3].map(i=>+$('dq'+g+i).value);if(new Set(o).size!==4){alert('Cada jugador tiene que aparecer una sola vez');return}const x=await rpc('mm_admin_desempate',{p_apin:S.admin,p_grupo:g,p_orden:o});if(!x.ok){alert(x.error);return}toast('✔ Desempate fijado');await cargar(true)}
+
+/* ========================= acceso ========================= */
+function loginUI(){
+  $('login').classList.remove('hide');$('app').classList.add('hide');$('nav').classList.add('hide');
+  const pintaLista=q=>{q=(q||'').toLowerCase();$('lgl').innerHTML=S.players.filter(p=>!q||(p.nombre+' '+p.pais).toLowerCase().includes(q)).map(p=>`<button data-id="${p.id}"><span style="font-size:22px">${p.bandera}</span>${esc(p.nombre)}<small>${esc(p.pais)}</small></button>`).join('')||'<div style="padding:12px;color:#7f8fb0">Sin resultados</div>'};
+  pintaLista('');$('lgq').oninput=e=>pintaLista(e.target.value);
+  $('lgl').onclick=e=>{const b=e.target.closest('button');if(!b)return;const p=S.by[+b.dataset.id];window._lg=p;$('lg1').classList.add('hide');$('lg2').classList.remove('hide');$('lgwho').textContent=p.bandera+' '+p.nombre;$('lgpin').value='';$('lgerr').textContent='';$('lgpin').focus()};
+  $('lgback').onclick=()=>{$('lg2').classList.add('hide');$('lg1').classList.remove('hide')};
+  $('lgesp').onclick=()=>{S.ses={id:null};localStorage.setItem('mm_ses',JSON.stringify(S.ses));entrar()};
+  const ir=async()=>{const pin=$('lgpin').value.trim();if(pin.length<4){$('lgerr').textContent='Poné los 4 dígitos';return}$('lgerr').textContent='Verificando…';
+    try{const r=await rpc('mm_login',{p_player:_lg.id,p_pin:pin});if(!r.ok){$('lgerr').textContent=r.error;return}S.ses={id:_lg.id,pin};localStorage.setItem('mm_ses',JSON.stringify(S.ses));entrar()}catch(e){$('lgerr').textContent='Sin conexión'}};
+  $('lgok').onclick=ir;$('lgpin').onkeydown=e=>{if(e.key==='Enter')ir()};
+}
+function entrar(){$('login').classList.add('hide');$('app').classList.remove('hide');$('nav').classList.remove('hide');pintar()}
+
+/* ========================= arranque ========================= */
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
+(async function(){
+  try{S.ses=JSON.parse(localStorage.getItem('mm_ses')||'null')}catch(e){}
+  S.admin=sessionStorage.getItem('mm_adm')||null;
+  if(new URLSearchParams(location.search).get('tab'))S.tab=new URLSearchParams(location.search).get('tab');
+  await cargar();
+  if(!S.cargado){$('login').classList.remove('hide');$('lg1').innerHTML='<div class="err" style="margin-top:30px">'+esc(S.err)+'</div><div class="lk" onclick="location.reload()">Reintentar</div>';return}
+  if(S.ses&&S.ses.id){const r=await rpc('mm_login',{p_player:S.ses.id,p_pin:S.ses.pin}).catch(()=>({ok:true}));if(!r.ok){S.ses=null;localStorage.removeItem('mm_ses')}}
+  if(S.ses)entrar();else loginUI();
+  setInterval(()=>{if(!document.hidden&&S.ses)cargar(true)},30000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.ses)cargar(true)});
+})();
+/* service worker: avisa y recarga cuando hay versión nueva */
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    const avisar=w=>{if($('upd'))return;const d=document.createElement('div');d.id='upd';d.textContent='🔄 Hay una versión nueva — tocá para actualizar';d.onclick=()=>w.postMessage({type:'SKIP_WAITING'});document.body.appendChild(d)};
+    if(reg.waiting&&navigator.serviceWorker.controller)avisar(reg.waiting);
+    reg.addEventListener('updatefound',()=>{const w=reg.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)avisar(w)})});
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());
+}
+</script></body></html>
