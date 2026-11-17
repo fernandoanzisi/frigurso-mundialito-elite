@@ -80,6 +80,7 @@ label.l{display:block;font-size:12px;color:var(--tx2);margin:10px 0 4px;font-wei
 #login .lk{color:#5FB0E8;text-align:center;margin-top:14px;font-size:13px;text-decoration:underline;cursor:pointer}
 .hide{display:none!important}
 #toast{position:fixed;left:50%;bottom:calc(var(--nav) + 20px);transform:translateX(-50%);background:#14181f;color:#fff;padding:10px 16px;border-radius:99px;font-weight:600;z-index:300;font-size:13px;max-width:90vw}
+#ptr{position:fixed;top:0;left:50%;margin-left:-95px;width:190px;text-align:center;background:var(--rojo);color:#fff;border-radius:0 0 14px 14px;padding:9px 6px;font-weight:700;font-size:13px;z-index:400;transform:translateY(-70px);transition:transform .18s;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}#ptr.mov{transition:none}
 #upd{position:fixed;left:12px;right:12px;bottom:calc(var(--nav) + 12px);background:var(--rojo);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;z-index:250}
 /* IDENTIDAD FRIGURSO: splash (puro CSS, se va solo) */
 #fg-splash{position:fixed;inset:0;z-index:9000;background:#0b1220;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;animation:fg-splash-out .6s ease 2.4s forwards}
@@ -516,6 +517,33 @@ function loginUI(){
   $('lgok').onclick=ir;$('lgpin').onkeydown=e=>{if(e.key==='Enter')ir()};
 }
 function entrar(){$('login').classList.add('hide');$('app').classList.remove('hide');$('nav').classList.remove('hide');pintar()}
+
+/* ========================= atras nunca saca de la app + deslizar hacia abajo para actualizar ========================= */
+(function(){
+  try{history.replaceState({mm:0},'');history.pushState({mm:1},'')}catch(e){}
+  addEventListener('popstate',()=>{
+    const sh=$('sheet');
+    if(sh&&!sh.classList.contains('hide'))cerrar();
+    else if($('lg2')&&!$('lg2').classList.contains('hide')){$('lg2').classList.add('hide');$('lg1').classList.remove('hide')}
+    else if($('app')&&!$('app').classList.contains('hide')&&S.tab!=='torneo'){S.tab='torneo';pintar();window.scrollTo(0,0)}
+    else window.scrollTo(0,0);
+    try{history.pushState({mm:1},'')}catch(e){}   // siempre queda un paso "de reserva": volver atras jamas cierra la app
+  });
+  const ind=document.createElement('div');ind.id='ptr';ind.textContent='↓ Deslizá para actualizar';document.body.appendChild(ind);
+  let y0=0,dy=0,act=false,busy=false;
+  const sheetAbierto=()=>{const sh=$('sheet');return sh&&!sh.classList.contains('hide')};
+  const fin=()=>{ind.classList.remove('mov');ind.style.transform='';ind.textContent='↓ Deslizá para actualizar'};
+  addEventListener('touchstart',e=>{act=!busy&&e.touches.length===1&&(window.scrollY||document.documentElement.scrollTop)<=0&&!sheetAbierto();if(act){y0=e.touches[0].clientY;dy=0}},{passive:true});
+  addEventListener('touchmove',e=>{if(!act)return;dy=e.touches[0].clientY-y0;
+    if(dy>4&&(window.scrollY||0)<=0){ind.classList.add('mov');ind.style.transform='translateY('+(Math.min(dy,110)*.6-70)+'px)';ind.textContent=dy>80?'↑ Soltá para actualizar':'↓ Deslizá para actualizar'}
+    else if(dy<=0){fin()}},{passive:true});
+  addEventListener('touchend',async()=>{if(!act)return;act=false;const ir=dy>80;dy=0;
+    if(!ir){fin();return}
+    busy=true;ind.classList.remove('mov');ind.textContent='Actualizando…';ind.style.transform='translateY(-10px)';
+    try{await cargar(true)}catch(e){}
+    ind.textContent=S.err?'Sin conexión':'✔ Actualizado';await new Promise(r=>setTimeout(r,700));fin();busy=false},{passive:true});
+  addEventListener('touchcancel',()=>{act=false;fin()},{passive:true});
+})();
 
 /* ========================= arranque ========================= */
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
