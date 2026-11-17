@@ -133,10 +133,59 @@ const PTS = {G:1,R32:2,R16:3,QF:4,SF:5,T3:3,F:6};
 const rondaDe = m => RONDAS.find(r=>r.fase.includes(m.fase) && (m.fase!=='G'||r.n===m.fecha_n));
 const delRonda = r => S.matches.filter(m=>r.fase.includes(m.fase) && (r.n==null||m.fecha_n===r.n)).sort((a,b)=>a.id-b.id);
 
+/* ========================= VISTA PREVIA (solo si todavía no hay servidor conectado) ========================= */
+const DEMO = String(CFG.URL).indexOf('__')===0;
+const DM = (function(){
+  if(!DEMO) return null;
+  const P0=[[1,"Juan Rosas","Bulgaria","BUL","🇧🇬","Europa"],[2,"Agustín Martínez","Francia","FRA","🇫🇷","Europa"],[3,"Javier Irigoyen","Suecia","SWE","🇸🇪","Europa"],[4,"Roni Fridman","Noruega","NOR","🇳🇴","Europa"],[5,"Sapito Santana","Alemania","GER","🇩🇪","Europa"],[6,"Fer Mentasti","Dinamarca","DEN","🇩🇰","Europa"],[7,"Diego Gainza","Países Bajos","NED","🇳🇱","Europa"],[8,"Héctor González","Bosnia","BIH","🇧🇦","Europa"],[9,"Gastón Caballero","Suiza","SUI","🇨🇭","Europa"],[10,"Gastón Mesa","Bélgica","BEL","🇧🇪","Europa"],[11,"Gabi Piunti","Italia","ITA","🇮🇹","Europa"],[12,"Hernán Piunti","Croacia","CRO","🇭🇷","Europa"],[13,"Melli González","España","ESP","🇪🇸","Europa"],[14,"Stephan Domenech","Portugal","POR","🇵🇹","Europa"],[15,"Ian Schonalz","Eslovaquia","SVK","🇸🇰","Europa"],[16,"Seba del Río","Finlandia","FIN","🇫🇮","Europa"],[17,"Ricki González","Islandia","ISL","🇮🇸","Europa"],[18,"Rubén Leffler","Rumania","ROU","🇷🇴","Europa"],[19,"Pepe Expósito","Ucrania","UKR","🇺🇦","Europa"],[20,"Fer Gvirtz","Lituania","LTU","🇱🇹","Europa"],[21,"Ale López","Irlanda","IRL","🇮🇪","Europa"],[22,"Gastón Mate","Austria","AUT","🇦🇹","Europa"],[23,"Facu Hrynyszyn","Polonia","POL","🇵🇱","Europa"],[24,"Nico Russo","Grecia","GRE","🇬🇷","Europa"],[25,"Gere Szister","Perú","PER","🇵🇪","América"],[26,"Juan Paz","Jamaica","JAM","🇯🇲","América"],[27,"Guille Danzon","Colombia","COL","🇨🇴","América"],[28,"Leo Monteleone","Canadá","CAN","🇨🇦","América"],[29,"Sergio Perelman","Uruguay","URU","🇺🇾","América"],[30,"José Drobilla","Paraguay","PAR","🇵🇾","América"],[31,"Fabián Ayala","Argentina","ARG","🇦🇷","América"],[32,"Tanqui Fernández","Brasil","BRA","🇧🇷","América"],[33,"Hugo Sánchez","Haití","HAI","🇭🇹","América"],[34,"Maury Chamorro","Estados Unidos","USA","🇺🇸","América"],[35,"Claudio Almada","Costa Rica","CRC","🇨🇷","América"],[36,"Toti Iglesias","Cuba","CUB","🇨🇺","América"],[37,"Hueso Glaria","México","MEX","🇲🇽","América"],[38,"Hernán Díaz","Honduras","HON","🇭🇳","América"],[39,"Darío Martínez","Ecuador","ECU","🇪🇨","América"],[40,"Diego Troilo","Aruba","ARU","🇦🇼","América"],[41,"Ángel Sabio","Trinidad y Tobago","TRI","🇹🇹","América"],[42,"Jorge Olivera","Etiopía","ETH","🇪🇹","África"],[43,"Hueso Rodríguez","Kenia","KEN","🇰🇪","África"],[44,"José Miño","Uganda","UGA","🇺🇬","África"],[45,"Gastón Morales","Burkina Faso","BFA","🇧🇫","África"],[46,"Diego Murrua","Sudáfrica","RSA","🇿🇦","África"],[47,"Robert Barbiroto","Marruecos","MAR","🇲🇦","África"],[48,"Diego Núñez","Benín","BEN","🇧🇯","África"],[49,"Dani Lescano","Cabo Verde","CPV","🇨🇻","África"],[50,"José Barrera","Senegal","SEN","🇸🇳","África"],[51,"Pu Brandan","Túnez","TUN","🇹🇳","África"],[52,"Seba González","Japón","JPN","🇯🇵","Asia"],[53,"Gio Anzisi","Irak","IRQ","🇮🇶","Asia"],[54,"Ariel Vogt","Jordania","JOR","🇯🇴","Asia"],[55,"Sergio Vázquez","Arabia Saudita","KSA","🇸🇦","Asia"],[56,"Lito Acosta","Bangladesh","BAN","🇧🇩","Asia"],[57,"Juan Palheiro","Tailandia","THA","🇹🇭","Asia"],[58,"Tomy Bien","Georgia","GEO","🇬🇪","Asia"],[59,"Guille Bien","Corea del Norte","PRK","🇰🇵","Asia"],[60,"Charly Schneider","Turquía","TUR","🇹🇷","Asia"],[61,"Diego Farías","China","CHN","🇨🇳","Asia"],[62,"Matías Perrone","Malasia","MAS","🇲🇾","Asia"],[63,"Nahuel Noguera","Nueva Zelanda","NZL","🇳🇿","Oceanía"],[64,"Ignacio Fernández","Australia","AUS","🇦🇺","Oceanía"]].map(a=>({id:a[0],nombre:a[1],pais:a[2],codigo:a[3],bandera:a[4],continente:a[5],grupo:null,pos:null}));
+  const az=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
+  const mz=l=>{l=l.slice();for(let i=l.length-1;i>0;i--){const j=az(i+1);[l[i],l[j]]=[l[j],l[i]]}return l};
+  const M=[],ST={picks:{}};
+  const mk=o=>Object.assign({id:0,fase:'G',grupo:null,fecha_n:1,orden:1,a_id:null,b_id:null,slot_a:null,slot_b:null,next_id:null,next_slot:null,lose_next_id:null,lose_next_slot:null,ganador_id:null,empate:false,margen:null,estado:'pendiente',cargado_por:null,cargado_en:null,confirmado_por:null,fecha:null,cerrado:false,nota:null},o);
+  function sorteo(){
+    let k=az(16);const G=[...Array(16)].map(()=>[]);
+    ['Europa','América','África','Asia','Oceanía'].forEach(c=>mz(P0.filter(p=>p.continente===c)).forEach(p=>{G[k%16].push(p);k++}));
+    G.forEach((l,gi)=>mz(l).forEach((p,i)=>{p.grupo=String.fromCharCode(65+gi);p.pos=i+1}));
+    M.length=0;
+    for(let gi=0;gi<16;gi++){const g=String.fromCharCode(65+gi),by=n=>P0.find(p=>p.grupo===g&&p.pos===n).id;
+      [[1,1,1,2],[2,1,3,4],[3,2,1,3],[4,2,2,4],[5,3,1,4],[6,3,2,3]].forEach(([o,f,x,y])=>M.push(mk({id:gi*6+o,fase:'G',grupo:g,fecha_n:f,orden:o,a_id:by(x),b_id:by(y)})))}
+    const R=[['1A','2B'],['1C','2D'],['1E','2F'],['1G','2H'],['1I','2J'],['1K','2L'],['1M','2N'],['1O','2P'],['1B','2A'],['1D','2C'],['1F','2E'],['1H','2G'],['1J','2I'],['1L','2K'],['1N','2M'],['1P','2O']];
+    R.forEach((r,i)=>M.push(mk({id:101+i,fase:'R32',orden:i+1,slot_a:r[0],slot_b:r[1]})));
+    for(let k=1;k<=8;k++)M.push(mk({id:200+k,fase:'R16',orden:k,slot_a:'W:'+(100+2*k-1),slot_b:'W:'+(100+2*k)}));
+    for(let k=1;k<=4;k++)M.push(mk({id:300+k,fase:'QF',orden:k,slot_a:'W:'+(200+2*k-1),slot_b:'W:'+(200+2*k)}));
+    for(let k=1;k<=2;k++)M.push(mk({id:400+k,fase:'SF',orden:k,slot_a:'W:'+(300+2*k-1),slot_b:'W:'+(300+2*k)}));
+    M.push(mk({id:501,fase:'T3',orden:1,slot_a:'L:401',slot_b:'L:402'}),mk({id:601,fase:'F',orden:1,slot_a:'W:401',slot_b:'W:402'}));
+    // resultados de ejemplo en la fecha 1 de los primeros 8 grupos
+    M.filter(m=>m.fase==='G'&&m.fecha_n===1&&m.grupo<'I').forEach(m=>{const r=az(7);m.estado='confirmado';m.confirmado_por=0;if(r===0){m.empate=true;m.margen=0}else{m.ganador_id=az(2)?m.a_id:m.b_id;m.margen=1+az(4)}});
+    M.filter(m=>m.fase==='G'&&m.fecha_n===1&&m.grupo==='I').slice(0,1).forEach(m=>{m.estado='cargado';m.ganador_id=m.a_id;m.margen=2;m.cargado_por=m.a_id});
+  }
+  sorteo();
+  const ok={ok:true};
+  return {
+    rest(t){return Promise.resolve(JSON.parse(JSON.stringify(t==='mm_players'?P0:t==='mm_matches'?M.slice().sort((a,b)=>a.id-b.id):[{clave:'torneo',valor:{nombre:'Mundialito Match Play Elite 2026'}}])))},
+    rpc(fn,a){const m=M.find(x=>x.id===a.p_match);let r=ok;
+      switch(fn){
+        case 'mm_ranking':r=[];break;
+        case 'mm_mis_picks':r={ok:true,picks:ST.picks};break;
+        case 'mm_picks_partido':r=[];break;
+        case 'mm_set_pick':if(!m||m.estado!=='pendiente'||m.cerrado){r={ok:false,error:'Pronósticos cerrados para este partido'}}else ST.picks[m.id]=a.p_pick;break;
+        case 'mm_cargar_resultado':m.estado='cargado';m.cargado_por=a.p_player;m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;break;
+        case 'mm_confirmar':m.estado=a.p_ok?'confirmado':'disputado';break;
+        case 'mm_admin_resultado':m.estado='confirmado';m.empate=!!a.p_empate;m.ganador_id=a.p_empate?null:a.p_ganador;m.margen=a.p_margen||0;break;
+        case 'mm_admin_anular':m.estado='pendiente';m.ganador_id=null;m.empate=false;m.margen=null;break;
+        case 'mm_admin_sorteo':P0.forEach(p=>{const x=a.p_asig.find(y=>y.player===p.id);p.grupo=x.grupo;p.pos=x.pos});break;
+        case 'mm_admin_pins':r={ok:true,pins:P0.slice(0,5).map(p=>({id:p.id,nombre:p.nombre,pais:p.pais,pin:String(1000+az(9000))}))};break;
+        case 'mm_admin_fecha':M.filter(x=>x.fase===a.p_fase&&(a.p_fecha_n==null||x.fecha_n===a.p_fecha_n)).forEach(x=>x.fecha=a.p_fecha);break;
+        case 'mm_admin_cerrar':M.filter(x=>x.fase===a.p_fase&&(a.p_fecha_n==null||x.fecha_n===a.p_fecha_n)).forEach(x=>x.cerrado=a.p_cerrado);break;
+      }
+      return Promise.resolve(JSON.parse(JSON.stringify(r)))}
+  };
+})();
+
 /* ========================= red ========================= */
 const HD = ()=>({apikey:CFG.KEY,Authorization:'Bearer '+CFG.KEY});
-async function rest(t,qs){const r=await fetch(`${CFG.URL}/rest/v1/${t}?${qs||'select=*'}`,{headers:HD()});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
-async function rpc(fn,args){const r=await fetch(`${CFG.URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},HD()),body:JSON.stringify(args||{})});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
+async function rest(t,qs){if(DEMO)return DM.rest(t);const r=await fetch(`${CFG.URL}/rest/v1/${t}?${qs||'select=*'}`,{headers:HD()});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
+async function rpc(fn,args){if(DEMO)return DM.rpc(fn,args||{});const r=await fetch(`${CFG.URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},HD()),body:JSON.stringify(args||{})});if(!r.ok)throw new Error('Error '+r.status);return r.json()}
 
 /* ========================= datos ========================= */
 async function cargar(silencio){
@@ -183,7 +232,7 @@ function empateCritico(g){const t=tabla(g);if(!t.completo)return false;const a=t
 function pintar(){
   if(!S.cargado){$('main').innerHTML='<div class="msg">Cargando…</div>';return}
   $('yo').textContent=S.ses?(S.ses.id?(S.by[S.ses.id]?S.by[S.ses.id].bandera+' '+S.by[S.ses.id].nombre.split(' ')[0]:'Yo'):'👀 Espectador'):'';
-  $('msgbar').innerHTML=S.err?`<div class="msg bad">${esc(S.err)}</div>`:'';
+  $('msgbar').innerHTML=(DEMO?'<div class="msg">🧪 <b>VISTA PREVIA</b> con datos de ejemplo: cualquier PIN entra y nada se guarda. El torneo real se activa cuando se conecte el servidor.</div>':'')+(S.err?`<div class="msg bad">${esc(S.err)}</div>`:'');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
   const f={torneo:vTorneo,pos:vPos,pron:vPron,fix:vFix,mas:vMas}[S.tab];$('main').innerHTML=f();
 }
