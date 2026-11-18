@@ -130,6 +130,8 @@ const S = {players:[],by:{},matches:[],mby:{},cfg:{},picks:{},rank:[],ses:null,a
 const RONDAS = [
  {k:'G1',fase:['G'],n:1,t:'Zonas · Fecha 1'},{k:'G2',fase:['G'],n:2,t:'Zonas · Fecha 2'},{k:'G3',fase:['G'],n:3,t:'Zonas · Fecha 3'},
  {k:'R16',fase:['R16'],t:'Copas · Octavos de final'},{k:'QF',fase:['QF'],t:'Copas · Cuartos de final'},{k:'SF',fase:['SF'],t:'Copas · Semifinales'},{k:'F',fase:['T3','F'],t:'Copas · Final y 3er puesto'}];
+// Cuadro oficial de octavos (igual en las 4 copas): letra de zona vs letra de zona; el 1º de cada zona juega la Diamante, el 2º la Oro, etc.
+const CRUCES = [['A','I'],['E','M'],['B','J'],['F','N'],['C','K'],['G','O'],['D','L'],['H','P']];
 const FASE_N = {G:'Zonas',R16:'Octavos',QF:'Cuartos',SF:'Semifinal',T3:'3er puesto',F:'Final'};
 const PTS = {G:1,R16:2,QF:3,SF:4,T3:3,F:5};
 const rondaDe = m => RONDAS.find(r=>r.fase.includes(m.fase) && (m.fase!=='G'||r.n===m.fecha_n));
@@ -154,7 +156,7 @@ const DM = (function(){
     for(let gi=0;gi<16;gi++){const g=String.fromCharCode(65+gi),by=n=>P0.find(p=>p.grupo===g&&p.pos===n).id;
       [[1,1,1,2],[2,1,3,4],[3,2,1,3],[4,2,2,4],[5,3,1,4],[6,3,2,3]].forEach(([o,f,x,y])=>M.push(mk({id:gi*6+o,fase:'G',grupo:g,fecha_n:f,orden:o,a_id:by(x),b_id:by(y)})))}
     ['D','O','P','B'].forEach((c,ci)=>{const b=1000+ci*100;
-      for(let k=1;k<=8;k++)M.push(mk({id:b+k,fase:'R16',orden:k,copa:c,slot_a:'S'+[1,8,5,4,3,6,7,2][k-1],slot_b:'S'+[16,9,12,13,14,11,10,15][k-1],next_id:b+10+Math.ceil(k/2),next_slot:k%2?'a':'b'}));
+      for(let k=1;k<=8;k++)M.push(mk({id:b+k,fase:'R16',orden:k,copa:c,slot_a:(ci+1)+CRUCES[k-1][0],slot_b:(ci+1)+CRUCES[k-1][1],next_id:b+10+Math.ceil(k/2),next_slot:k%2?'a':'b'}));
       for(let k=1;k<=4;k++)M.push(mk({id:b+10+k,fase:'QF',orden:k,copa:c,slot_a:'W:'+(b+2*k-1),slot_b:'W:'+(b+2*k),next_id:b+20+Math.ceil(k/2),next_slot:k%2?'a':'b'}));
       for(let k=1;k<=2;k++)M.push(mk({id:b+20+k,fase:'SF',orden:k,copa:c,slot_a:'W:'+(b+10+2*k-1),slot_b:'W:'+(b+10+2*k),next_id:b+41,next_slot:k===1?'a':'b',lose_next_id:b+31,lose_next_slot:k===1?'a':'b'}));
       M.push(mk({id:b+31,fase:'T3',orden:1,copa:c,slot_a:'L:'+(b+21),slot_b:'L:'+(b+22)}),mk({id:b+41,fase:'F',orden:1,copa:c,slot_a:'W:'+(b+21),slot_b:'W:'+(b+22)}));});
@@ -174,8 +176,7 @@ const DM = (function(){
     const gs=[...new Set(P0.map(p=>p.grupo))].sort();
     if(M.filter(m=>m.fase==='G').every(m=>m.estado==='confirmado'))['D','O','P','B'].forEach((c,ci)=>{
       if(M.some(m=>m.copa===c&&m.fase==='R16'&&m.estado!=='pendiente'))return;
-      const sd=gs.map(g=>Object.assign({g},stand(g)[ci])).sort((a,b)=>b.pts-a.pts||b.dif-a.dif||(a.g<b.g?-1:1)).map(x=>x.id);
-      [1,8,5,4,3,6,7,2].forEach((x,i)=>{const m=M.find(y=>y.id===1000+ci*100+i+1&&y.estado==='pendiente');if(m){m.a_id=sd[x-1];m.b_id=sd[[16,9,12,13,14,11,10,15][i]-1]}})});
+      CRUCES.forEach(([x,y],i)=>{const m=M.find(z=>z.id===1000+ci*100+i+1&&z.estado==='pendiente');if(m){m.a_id=stand(x)[ci].id;m.b_id=stand(y)[ci].id}})});
     ['R16','QF','SF'].forEach(f=>M.filter(m=>m.fase===f).forEach(m=>{const ok=m.estado==='confirmado'&&!m.empate,w=ok?m.ganador_id:null,l=ok?(w===m.a_id?m.b_id:m.a_id):null;
       const put=(id,sl,v)=>{const n=M.find(x=>x.id===id);if(n&&n.estado==='pendiente')n[sl==='a'?'a_id':'b_id']=v};if(m.next_id)put(m.next_id,m.next_slot,w);if(m.lose_next_id)put(m.lose_next_id,m.lose_next_slot,l)}));
   }
@@ -229,7 +230,7 @@ async function cargar(silencio,liv){
 function rondaActual(){for(let i=0;i<RONDAS.length;i++){const l=delRonda(RONDAS[i]);if(l.some(m=>m.estado!=='confirmado'&&(m.a_id||m.fase==='G')))return i;}return RONDAS.length-1}
 
 /* ========================= utilidades de partido ========================= */
-function slotTxt(s){if(!s)return'—';let m;if(m=/^([12])([A-P])$/.exec(s))return m[1]+'º Grupo '+m[2];if(m=/^S(\d+)$/.exec(s))return 'Cabeza de serie '+m[1];if(m=/^W:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Ganador '+(x?FASE_N[x.fase]+' '+x.orden:'?')}if(m=/^L:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Perdedor '+(x?FASE_N[x.fase]+' '+x.orden:'?')}return s}
+function slotTxt(s){if(!s)return'—';let m;if(m=/^([1-4])([A-P])$/.exec(s))return m[1]+'º Zona '+m[2];if(m=/^W:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Ganador '+(x?FASE_N[x.fase]+' '+x.orden:'?')}if(m=/^L:(\d+)$/.exec(s)){const x=S.mby[+m[1]];return 'Perdedor '+(x?FASE_N[x.fase]+' '+x.orden:'?')}return s}
 function lado(m,w){const id=m[w+'_id'],p=id&&S.by[id];return p?{p,fl:p.bandera,cd:p.codigo,nm:p.nombre,pais:p.pais}:{p:null,fl:'❔',cd:'???',nm:slotTxt(m['slot_'+w])||'Por definir',pais:''}}
 function lbl(m){if(m.fase==='G')return 'Zona '+m.grupo+' · Fecha '+m.fecha_n;const c=copaDe(m.copa);return (c?'Copa '+c.k+' · ':'')+FASE_N[m.fase]+(['T3','F'].includes(m.fase)?'':' '+m.orden)}
 function fechaTxt(m){if(!m.fecha)return 'Fecha a coordinar';const d=new Date(m.fecha);const dias=['dom.','lun.','mar.','mié.','jue.','vie.','sáb.'];return dias[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' - '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
@@ -456,7 +457,7 @@ function vMas(){
   const yo=S.ses&&S.ses.id&&S.by[S.ses.id];
   let h=`<div class="card">${yo?`<div class="row"><span style="font-size:40px">${yo.bandera}</span><div><b style="font-size:17px">${esc(yo.nombre)}</b><div class="sub2">${esc(yo.pais)} · ${esc(yo.continente)}${yo.grupo?' · Grupo '+yo.grupo:''}</div></div></div>`:'<b>Estás mirando como espectador</b>'}<div class="row" style="margin-top:12px"><button class="btn gris sm" onclick="salir()">${yo?'Cerrar sesión':'Entrar con mi nombre'}</button><button class="btn gris sm" onclick="compartir()">Compartir la app</button></div></div>`;
   h+=`<h2 class="sec">Participantes por continente</h2>`+['Europa','América','África','Asia','Oceanía'].map(c=>{const l=S.players.filter(p=>p.continente===c);return `<details class="card"><summary style="font-weight:800;cursor:pointer">${c} <span class="sub2">· ${l.length}</span></summary><div class="list" style="margin-top:8px">${l.map(p=>`<div class="it"><span class="fl">${p.bandera}</span><div class="g"><b>${esc(p.nombre)}</b><span>${esc(p.pais)}${p.grupo?' · Grupo '+p.grupo:''}</span></div></div>`).join('')}</div></details>`}).join('');
-  h+=`<h2 class="sec">Reglamento</h2><div class="card sub2" style="color:var(--tx)"><b>Formato:</b> 64 jugadores en 16 zonas (A a P) de 4, todos contra todos en 3 fechas, sábado 12 y domingo 13 de diciembre. Victoria 3 pts, empate 1, derrota 0.<br><br><b>Copas:</b> según la posición en la zona: 1º Copa Diamante, 2º Oro, 3º Plata, 4º Bronce. Cada copa es de eliminación directa entre 16 (octavos, cuartos, semis, final y 3er puesto); los octavos se arman por rendimiento en la zona (el mejor contra el peor). 5º y 6º salen entre los perdedores de cuartos por diferencia de hoyos.<br><br><b>Desempate:</b> 1º diferencia de hoyos, 2º enfrentamiento directo, 3º penalty putt a 3 hoyos.<br><br><b>Resultados:</b> cada jugador carga el resultado de su partido y el rival lo confirma. Si hay desacuerdo, resuelve la organización.<br><br><b>Pronósticos:</b> elegí quién gana (en zonas también empate). Se cierran cuando empieza el partido o la organización los cierra. Puntos por acierto: zonas 1 · octavos 2 · cuartos 3 · semis 4 · 3er puesto 3 · final 5.</div>`;
+  h+=`<h2 class="sec">Reglamento</h2><div class="card sub2" style="color:var(--tx)"><b>Formato:</b> 64 jugadores en 16 zonas (A a P) de 4, todos contra todos en 3 fechas, sábado 12 y domingo 13 de diciembre. Victoria 3 pts, empate 1, derrota 0.<br><br><b>Copas:</b> según la posición en la zona: 1º Copa Diamante, 2º Oro, 3º Plata, 4º Bronce. Cada copa es de eliminación directa entre 16 (octavos, cuartos, semis, final y 3er puesto); los octavos son el cuadro oficial, igual en las 4 copas: A vs I, E vs M, B vs J, F vs N, C vs K, G vs O, D vs L y H vs P (según la letra de la zona de cada jugador). 5º y 6º salen entre los perdedores de cuartos por diferencia de hoyos.<br><br><b>Desempate:</b> 1º diferencia de hoyos, 2º enfrentamiento directo, 3º penalty putt a 3 hoyos.<br><br><b>Resultados:</b> cada jugador carga el resultado de su partido y el rival lo confirma. Si hay desacuerdo, resuelve la organización.<br><br><b>Pronósticos:</b> elegí quién gana (en zonas también empate). Se cierran cuando empieza el partido o la organización los cierra. Puntos por acierto: zonas 1 · octavos 2 · cuartos 3 · semis 4 · 3er puesto 3 · final 5.</div>`;
   h+=`<h2 class="sec">Organización</h2><div class="card">${S.admin?adminHTML():'<button class="btn sec full" onclick="adminLogin()">🔐 Entrar como organización</button>'}</div>`;
   h+='<div class="sub2" style="text-align:center;margin:18px">Frigurso FootGolf · Mundialito Elite 2026</div>';return h;
 }
