@@ -266,6 +266,22 @@ function copaFinal(l){
   if(g('QF').length&&g('QF').every(m=>m.estado==='confirmado')){const o=g('QF').map(per).filter(Boolean).sort((a,b)=>(dif[b]||0)-(dif[a]||0)||a-b);o.forEach((id,i)=>out[5+i]=id)}
   return out;
 }
+/* ---- tabla final general 1-64: Diamante 1-16, Oro 17-32, Plata 33-48, Bronce 49-64 ---- */
+function puestosCopa(l){
+  const out=copaFinal(l),ms=S.matches.filter(m=>m.copa===l&&m.fase==='R16');
+  if(ms.length&&ms.every(m=>m.estado==='confirmado'&&!m.empate)){   // 9º a 16º: perdedores de octavos
+    const zona=id=>{const q=S.by[id],r=q&&q.grupo?tabla(q.grupo).l.find(x=>x.p.id===id):null;return r||{pts:0,dif:0}};
+    const lo=ms.map(m=>({id:m.ganador_id===m.a_id?m.b_id:m.a_id,mg:m.margen||0})).filter(x=>x.id);
+    lo.sort((a,b)=>a.mg-b.mg||zona(b.id).pts-zona(a.id).pts||zona(b.id).dif-zona(a.id).dif||a.id-b.id).forEach((x,i)=>out[9+i]=x.id)}
+  return out}
+function detallePuesto(n){return n===1?'Campeón':n===2?'Subcampeón':n===3?'3º puesto':n===4?'4º puesto':n<=8?'Cayó en cuartos':'Cayó en octavos'}
+function finalFilas(){const f=[];COPAS.forEach((c,ci)=>{const o=puestosCopa(c.l);for(let n=1;n<=16;n++)f.push({g:ci*16+n,n,c,id:o[n]||null})});return f}
+function copiarFinal(){const t=finalFilas().filter(r=>r.id).map(r=>r.g+'º  '+S.by[r.id].nombre+' ('+S.by[r.id].pais+') · Copa '+r.c.k+' · '+detallePuesto(r.n)).join('\n');navigator.clipboard.writeText('MUNDIALITO MATCH PLAY ELITE 2026 · Posiciones finales\n\n'+t).then(()=>toast('Copiado'))}
+function vFinal(){
+  const f=finalFilas(),def=f.filter(r=>r.id).length;
+  return `<div class="msg" style="margin:8px 12px">Posiciones finales del <b>1º al 64º</b>: cada copa ocupa 16 lugares (💎 1-16 · 🏆 17-32 · 🥈 33-48 · 🥉 49-64). Definidas: <b>${def}</b> de 64. <button class="btn sm gris" onclick="copiarFinal()" style="margin-left:6px">📋 Copiar</button></div>`+
+  COPAS.map((c,ci)=>`<div class="card" style="padding:0;overflow:hidden"><div style="background:${c.bg};color:#fff;padding:10px 14px"><b>${c.i} COPA ${c.k.toUpperCase()}</b> <span style="font-size:12px;opacity:.9">· puestos ${ci*16+1} a ${ci*16+16}</span></div><table class="pos">${f.filter(r=>r.c===c).map(r=>{const q=r.id&&S.by[r.id];return `<tr><td style="width:40px"><b>${r.g}º</b></td><td class="n">${q?q.fh+' <b>'+esc(q.codigo)+'</b> '+esc(q.nombre)+'<div class="sub2">'+detallePuesto(r.n)+'</div>':'<span class="sub2">a definir</span>'}</td><td style="text-align:right;white-space:nowrap">${r.n<=6?'<b>'+$m(PREMIOS[c.k][r.n-1])+'</b>':''}</td></tr>`}).join('')}</table></div>`).join('')+
+  `<div class="sub2" style="margin:6px 16px">Dentro de cada copa: 1º a 4º por final y 3er puesto; 5º a 8º, los perdedores de cuartos por diferencia de hoyos; 9º a 16º, los perdedores de octavos por menor diferencia en su partido y, si igualan, por puntos y diferencia de la zona.</div>`}
 function vCopas(){
   const sel=copaDe(S.copaSel)||COPAS[0],fin=copaFinal(sel.l),ms=S.matches.filter(m=>m.copa===sel.l);
   const chips=`<div class="chips">${COPAS.map(c=>`<button class="${c.l===sel.l?'on':''}" onclick="S.copaSel='${c.l}';pintar()">${c.i} ${c.k}</button>`).join('')}</div>`;
@@ -410,8 +426,9 @@ function vVivo(){
 var vq_t;
 
 function vPos(){
-  const tabs=`<div class="chips"><button class="${S.posTab==='grupos'?'on':''}" onclick="S.posTab='grupos';pintar()">Grupos</button><button class="${S.posTab==='copas'?'on':''}" onclick="S.posTab='copas';pintar()">Copas</button><button class="${S.posTab==='prode'?'on':''}" onclick="S.posTab='prode';pintar()">Prode</button></div>`;
+  const tabs=`<div class="chips"><button class="${S.posTab==='grupos'?'on':''}" onclick="S.posTab='grupos';pintar()">Grupos</button><button class="${S.posTab==='copas'?'on':''}" onclick="S.posTab='copas';pintar()">Copas</button><button class="${S.posTab==='final'?'on':''}" onclick="S.posTab='final';pintar()">Final 1-64</button><button class="${S.posTab==='prode'?'on':''}" onclick="S.posTab='prode';pintar()">Prode</button></div>`;
   if(S.posTab==='copas')return tabs+vCopas();
+  if(S.posTab==='final')return tabs+vFinal();
   if(S.posTab==='prode'){
     const rk=S.rank.slice(),yo=S.ses&&S.ses.id,pos=rk.findIndex(x=>x.player_id===yo)+1;
     let h=tabs+(yo?`<div class="prog"><span>Tu puesto</span><b>${pos?pos+'º de '+rk.length:'sin puntos todavía'}</b></div>`:'');
