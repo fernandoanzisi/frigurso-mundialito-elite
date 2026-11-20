@@ -217,7 +217,7 @@ async function rpc(fn,args){if(DEMO)return DM.rpc(fn,args||{});const r=await fet
 
 /* ========================= datos ========================= */
 // true si la persona está escribiendo / tiene abierto un formulario: no repintar (si no, el refresco automático le borra lo que estaba cargando)
-function editando(){const a=document.activeElement;return !!(document.querySelector('#sheet:not(.hide)')||(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))||document.querySelector('details[open]'))}
+function editando(){const a=document.activeElement;return !!(document.querySelector('#sheet:not(.hide)')||(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))||document.querySelector('details[open]')||[...document.querySelectorAll('video')].some(v=>v.currentTime>0&&!v.ended))}
 async function cargar(silencio,liv){
   try{
     if(liv&&S.cargado){const [ma,cf]=await Promise.all([rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S.err='';S.last=Date.now();if(!editando())pintar();return}
