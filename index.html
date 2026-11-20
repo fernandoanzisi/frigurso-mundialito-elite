@@ -202,6 +202,7 @@ const DM = (function(){
         case 'mm_admin_anular':m.estado='pendiente';m.ganador_id=null;m.empate=false;m.margen=null;m.a_score=null;m.b_score=null;break;
         case 'mm_admin_sorteo':P0.forEach(p=>{const x=a.p_asig.find(y=>y.player===p.id);p.grupo=x.grupo;p.pos=x.pos});break;
         case 'mm_admin_reemplazar':{const p=P0.find(y=>y.id===a.p_player);Object.assign(p,{nombre:a.p_nombre,pais:a.p_pais,codigo:a.p_codigo,bandera:a.p_bandera,continente:a.p_continente});r={ok:true,pin:String(1000+az(9000))};break}
+        case 'mm_admin_corregir':{const p=P0.find(y=>y.id===a.p_player);Object.assign(p,{nombre:a.p_nombre,pais:a.p_pais,codigo:a.p_codigo,bandera:a.p_bandera,continente:a.p_continente});r={ok:true};break}
         case 'mm_admin_pins':r={ok:true,pins:P0.slice(0,5).map(p=>({id:p.id,nombre:p.nombre,pais:p.pais,pin:String(1000+az(9000))}))};break;
         case 'mm_admin_fecha':M.filter(x=>x.fase===a.p_fase&&(a.p_fecha_n==null||x.fecha_n===a.p_fecha_n)).forEach(x=>x.fecha=a.p_fecha);break;
         case 'mm_admin_cerrar':M.filter(x=>x.fase===a.p_fase&&(a.p_fecha_n==null||x.fecha_n===a.p_fecha_n)).forEach(x=>x.cerrado=a.p_cerrado);break;
@@ -516,7 +517,7 @@ function adminHTML(){
    <label class="l">País (editable, por si no está en la lista)</label><input class="in" id="rpp" placeholder="Ej. Chile">
    <div class="row"><div style="flex:1"><label class="l">Código (3 letras)</label><input class="in" id="rpc" maxlength="3" placeholder="CHI"></div><div style="flex:1"><label class="l">Bandera</label><input class="in" id="rpb" placeholder="🇨🇱" oninput="prevBandera()"> <div class="sub2" style="margin-top:4px">Se ve así: <span id="rpv" style="font-size:20px"></span></div></div></div>
    <label class="l">Continente</label><select class="in" id="rpk">${['Europa','América','África','Asia','Oceanía'].map(c=>`<option>${c}</option>`).join('')}</select>
-   <div class="row" style="margin-top:8px"><button class="btn sm" onclick="reemplazar()">🔁 Reemplazar</button></div><div id="rpout"></div></details>`;
+   <div class="sub2" style="margin:8px 0 4px">✏ <b>Corregir datos</b> cambia nombre, país, código, bandera o continente del jugador elegido <b>sin tocar su PIN ni sus pronósticos</b>. 🔁 <b>Reemplazar</b> es para cuando se baja y entra otro (PIN nuevo, pronósticos borrados).</div><div class="row" style="margin-top:8px"><button class="btn sm gris" onclick="traerDatos()">📥 Traer datos actuales</button><button class="btn sm" onclick="corregir()">✏ Corregir datos</button><button class="btn sm" onclick="reemplazar()">🔁 Reemplazar</button></div><div id="rpout"></div></details>`;
 }
 /* ---- banderas: las de Inglaterra/Escocia/Gales no se ven como emoji en muchos aparatos, se dibujan ---- */
 const FSVG={gbeng:"<rect width='30' height='20' fill='#fff' stroke='#bbb' stroke-width='.6'/><rect x='13' width='4' height='20' fill='#c8102e'/><rect y='8' width='30' height='4' fill='#c8102e'/>",
@@ -578,6 +579,13 @@ async function reemplazar(){const id=+$('rpj').value,o=S.by[id],n=$('rpn').value
   const r=await rpc('mm_admin_reemplazar',{p_apin:S.admin,p_player:id,p_nombre:n,p_pais:pa,p_codigo:c,p_bandera:b,p_continente:k});if(!r.ok){alert(r.error);return}
   const url=location.href.split('#')[0].split('?')[0],x={nombre:n,pais:pa,pin:r.pin};window._pins=[x];toast('✔ Reemplazo hecho');await cargar(true);
   const e=$('rpout');if(e)e.innerHTML=`<div class="msg" style="margin-top:8px">Entra <b>${esc(n)}</b>. PIN: <b style="letter-spacing:.15em">${r.pin}</b> (se muestra una sola vez) <a class="btn sm gris" style="text-decoration:none" target="_blank" href="https://wa.me/?text=${encodeURIComponent(msgPin(x,url))}">WhatsApp</a></div>`}
+function traerDatos(){const o=S.by[+$('rpj').value];if(!o)return;$('rpn').value=o.nombre;$('rpp').value=o.pais;$('rpc').value=o.codigo;$('rpb').value=o.bandera;$('rpk').value=o.continente;$('rpe').value='';prevBandera()}
+async function corregir(){const id=+$('rpj').value,o=S.by[id],n=$('rpn').value.trim(),pa=$('rpp').value.trim(),c=$('rpc').value.trim().toUpperCase(),b=$('rpb').value.trim(),k=$('rpk').value;
+  if(!n||!pa||c.length!==3||!b){alert('Completá nombre, país, código de 3 letras y bandera (podés usar "Traer datos actuales" y cambiar lo que haga falta)');return}
+  if(!confirm('Se corrige '+o.nombre+' ('+o.pais+') → '+n+' ('+pa+'). Conserva PIN, pronósticos, zona y partidos. ¿Confirmás?'))return;
+  let r;try{r=await rpc('mm_admin_corregir',{p_apin:S.admin,p_player:id,p_nombre:n,p_pais:pa,p_codigo:c,p_bandera:b,p_continente:k})}catch(e){alert('No se pudo corregir (¿la función está instalada en la base?)');return}
+  if(!r.ok){alert(r.error||'No se pudo corregir');return}
+  toast('✔ Datos corregidos');await cargar(true);const e=$('rpout');if(e)e.innerHTML=`<div class="msg" style="margin-top:8px">Listo: <b>${esc(n)}</b> (${esc(pa)}). Su PIN y sus pronósticos no se tocaron.</div>`}
 function msgPin(x,url){return `Hola ${x.nombre.split(' ')[0]}! Tu acceso al Mundialito Match Play Elite 2026 (Frigurso FootGolf):\n${url}\nElegí tu nombre (${x.nombre}) y poné el PIN: ${x.pin}`}
 function copiarPins(){const url=location.href.split('#')[0].split('?')[0];navigator.clipboard.writeText(_pins.map(x=>x.nombre+' ('+x.pais+'): '+x.pin).join('\n')+'\n\nLink: '+url).then(()=>toast('Copiado'))}
 function csvPins(){const b=new Blob(['﻿Nombre;País;PIN\r\n'+_pins.map(x=>[x.nombre,x.pais,x.pin].join(';')).join('\r\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pins_mundialito.csv';a.click()}
