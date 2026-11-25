@@ -35,6 +35,7 @@ h2.sec{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:16px 
 .opt{flex:1.1;border:2px dashed #9bd0a3;border-radius:10px;padding:10px 4px;text-align:center;background:#fff;font-weight:800;font-size:15px;color:var(--tx3);min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none}
 .opt.on{border:2px solid var(--rojo);background:var(--rojo);color:#fff}
 .opt.dis{opacity:.55;cursor:default}
+.pbox{background:#fff6dc;border:1px dashed #e0b84a;border-radius:12px;padding:8px 6px;margin-top:6px}.ptit{font-size:12px;font-weight:800;color:#8a6100;text-align:center;letter-spacing:.5px;margin-bottom:4px}.ptit span{font-weight:600;letter-spacing:0;color:#a88a3c}
 .pst{display:flex;align-items:center;gap:3px;flex-wrap:nowrap}.pst .btn{padding:6px 10px;font-size:18px;min-width:34px}.pst b{font-size:24px;min-width:26px;text-align:center}
 .opt.ok{border-color:var(--ok);background:var(--ok);color:#fff}.opt.mal{border-color:var(--mal);background:#fdeaea;color:var(--mal)}
 .opt small{font-size:10px;font-weight:600;opacity:.9}
@@ -319,7 +320,7 @@ function vPron(){
   const r=RONDAS[S.ri],ms=delRonda(r);
   if(!S.ses||!S.ses.id)return selRonda()+'<div class="msg">Para pronosticar tenés que entrar con tu nombre y PIN. (Estás como espectador.)</div>'+listaPron(ms,true);
   const abiertos=ms.filter(abierto),hechos=ms.filter(m=>S.picks[m.id]).length,tot=ms.filter(m=>m.a_id&&m.b_id).length;
-  return selRonda()+`<div class="prog"><span>Pronósticos</span><b>${hechos}/${tot}</b></div>`+(ms.length?listaPron(ms,false):'<div class="msg">Todavía no hay partidos en esta ronda.</div>');
+  return selRonda()+`<div class="msg" style="margin:8px 12px">🎯 Acá ponés <b>cómo creés que va a salir</b> cada partido (prode). <b>No es el resultado real</b>: ese lo cargan los jugadores desde <b>Torneo → Mis partidos</b> y se ve en <b>En vivo</b> y <b>Posiciones</b>.<br>Marcador exacto 3 pts · ganador 1 pt.</div><div class="prog"><span>Pronósticos</span><b>${hechos}/${tot}</b></div>`+(ms.length?listaPron(ms,false):'<div class="msg">Todavía no hay partidos en esta ronda.</div>');
 }
 function listaPron(ms,ro){
   const pend=ms.filter(m=>m.estado!=='confirmado'),jug=ms.filter(m=>m.estado==='confirmado');
@@ -330,7 +331,7 @@ function cardPron(m,ro){
   const g=modo()==='golpes',d=S.pd[m.id]||(pm?{a:pm.a,b:pm.b}:{a:g?0:0,b:0});
   const lado2=(k,L)=>`<div class="side"><span class="fl">${L.fl}</span><span class="cd">${esc(L.cd)}</span><span class="nm">${esc(L.nm)}</span></div>`;
   const stp=k=>`<div class="pst"><button class="btn gris" onclick="pdStp(${m.id},'${k}',-1)">−</button><b>${d[k]}</b><button class="btn" onclick="pdStp(${m.id},'${k}',1)">+</button></div>`;
-  const quien=(a,b)=>{const x=g?b-a:a-b;return x===0?'empate':'gana '+(x>0?A.cd:Bq.cd)};
+  const quien=(a,b)=>{const x=g?b-a:a-b;return x===0?(m.fase==='G'?'empate':'elegí quién gana'):'gana '+(x>0?A.cd:Bq.cd)};
   const tuyo=pm?`${pm.a} a ${pm.b} (${quien(pm.a,pm.b)})`:pk?(pk==='E'?'empate':'gana '+(pk==='A'?A.cd:Bq.cd))+' (sin marcador)':'';
   let cuerpo;
   if(can){const cambio=!pm||pm.a!==d.a||pm.b!==d.b;
@@ -345,7 +346,7 @@ function cardPron(m,ro){
   const nota=fin?`<div class="sub2" style="text-align:center;margin-top:8px">Resultado: ${esc(resTxt(m))}${pk?` · <b style="color:var(--${pts?'ok':'mal'})">${exacto?'¡Exacto! ':pts?'Acertaste el ganador ':''}+${pts} pts</b>`:' · sin pronóstico'}</div>`:
     (!can&&!ro&&m.a_id&&m.b_id?`<div class="sub2" style="text-align:center;margin-top:8px">🔒 Pronósticos cerrados${pk?'':' · no pronosticaste'}</div>`:'');
   const extra=fin?'<span class="tag ok">Final</span>':(m.estado==='cargado'?'<span class="tag warn">Por confirmar</span>':(can?'':'🔒'));
-  return cardBase(m,cuerpo+nota,extra);
+  return cardBase(m,`<div class="pbox"><div class="ptit">🎯 TU PRONÓSTICO <span>(no es el resultado real)</span></div>${cuerpo}</div>`+nota,extra);
 }
 function pdStp(mid,k,dl){const pm=S.pm[mid],g=modo()==='golpes';const d=S.pd[mid]||(pm?{a:pm.a,b:pm.b}:{a:0,b:0});let v=d[k]+dl;v=g?Math.max(-40,Math.min(80,v)):Math.max(0,Math.min(18,v));d[k]=v;S.pd[mid]=d;pintar()}
 async function guardarPron(mid){
