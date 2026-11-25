@@ -302,7 +302,7 @@ function pintar(){
   $('yo').textContent=S.ses?(S.ses.id?(S.by[S.ses.id]?S.by[S.ses.id].bandera+' '+S.by[S.ses.id].nombre.split(' ')[0]:'Yo'):'👀 Espectador'):'';
   $('msgbar').innerHTML=(DEMO?'<div class="msg">🧪 <b>VISTA PREVIA</b> con datos de ejemplo: cualquier PIN entra y nada se guarda. El torneo real se activa cuando se conecte el servidor.</div>':'')+(S.err?`<div class="msg bad">${esc(S.err)}</div>`:'');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
-  const f={torneo:vTorneo,vivo:vVivo,pos:vPos,pron:vPron,fix:vFix,mas:vMas}[S.tab];$('main').innerHTML=f();
+  const f={torneo:vTorneo,vivo:vVivo,pos:vPos,pron:vPron,fix:vFix,mas:vMas}[S.tab];$('main').innerHTML=f();if(S.tab==='mas'&&S.admin)paresPintar();
 }
 function go(t){S.tab=t;pintar();window.scrollTo(0,0)}
 function selRonda(){const r=RONDAS[S.ri];return `<div class="selr"><button onclick="rondaMas(-1)">‹</button><div class="mid">${esc(r.t)} ▾</div><button onclick="rondaMas(1)">›</button></div>`}
@@ -500,6 +500,7 @@ function adminHTML(){
   const crit=grupos().filter(empateCritico);
   const resolver=S.matches.filter(m=>['cargado','disputado'].includes(m.estado));
   return `<div class="row sb"><b>🔐 Organización</b><button class="btn gris sm" onclick="S.admin=null;sessionStorage.removeItem('mm_adm');pintar()">Salir</button></div>
+  <details open style="margin-top:10px"><summary><b>⚽ Armar partidos (elegir quién juega con quién)</b></summary><div class="sub2" style="margin:6px 0">Elegí los cruces que quieras. Cada pareja queda en la misma zona y se enfrenta en la <b>fecha 1</b>. Los demás jugadores quedan donde estaban (solo se mueven los que hace falta). No toca los PINs. Solo se puede mientras no haya resultados de zonas cargados.</div><div id="pares"></div></details>
   <details open style="margin-top:10px"><summary><b>1. Sorteo de grupos</b></summary><div class="sub2" style="margin:6px 0">${sorteado?'Ya hay grupos armados.':'El sorteo oficial se hace por fuera de la app (en vivo, filmado): cuando te pasen el resultado, cargalo acá.'}</div>
    <div class="row"><button class="btn sm" ${hayRes?'disabled':''} onclick="cargarSorteo()">✍ Cargar sorteo en vivo</button><button class="btn sm gris" ${hayRes?'disabled':''} onclick="sortear()">🎲 Sorteo automático</button></div><div id="srt"></div></details>
   <details style="margin-top:10px"><summary><b>2. PINs de los jugadores</b></summary><div class="sub2" style="margin:6px 0">Cada jugador entra con su nombre y un PIN de 4 dígitos. Se muestran UNA sola vez: copialos y mandalos por WhatsApp.</div>
@@ -546,6 +547,47 @@ function manGet(){let m=null;try{m=JSON.parse(localStorage.getItem('mm_man')||'n
     S.players.forEach(p=>{if(p.grupo&&p.pos)m[p.grupo.charCodeAt(0)-65][p.pos-1]=p.id})}
   return m}
 function manSet(m){window._man=m;try{localStorage.setItem('mm_man',JSON.stringify(m))}catch(e){}}
+/* ---- armar partidos a mano: cada pareja va a la misma zona en lugares 1-2 o 3-4 (se cruzan en la fecha 1); el resto queda igual ---- */
+function paresGet(){let l=null;try{l=JSON.parse(localStorage.getItem('mm_pares')||'null')}catch(e){}return Array.isArray(l)&&l.length?l:[[0,0]]}
+function paresSet(l){window._pares=l;try{localStorage.setItem('mm_pares',JSON.stringify(l))}catch(e){}}
+function paresPintar(){const el=$('pares');if(!el)return;const l=window._pares||paresGet();window._pares=l;
+  const hayRes=S.matches.some(m=>m.fase==='G'&&m.estado!=='pendiente'),usados=new Set(l.flat().filter(Boolean));
+  const lista=S.players.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const opts=sel=>`<option value="0">— elegir jugador —</option>`+lista.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''} ${usados.has(p.id)&&p.id!==sel?'disabled':''}>${esc(p.bandera)} ${esc(p.nombre)}${p.grupo?' · Zona '+p.grupo:''}</option>`).join('');
+  el.innerHTML=l.map((pr,i)=>`<div class="card" style="margin:6px 0"><div class="row sb"><b>Partido ${i+1}</b>${l.length>1?`<button class="btn sm gris" onclick="parQuitar(${i})">✕</button>`:''}</div><select class="in" style="margin-top:4px" onchange="parElegir(${i},0,this.value)">${opts(pr[0])}</select><div class="sub2" style="text-align:center;margin:2px 0">vs</div><select class="in" onchange="parElegir(${i},1,this.value)">${opts(pr[1])}</select></div>`).join('')+
+  `<div class="row" style="margin:8px 0"><button class="btn sm gris" ${l.length>=32?'disabled':''} onclick="parAgregar()">＋ Agregar partido</button><button class="btn sm" ${hayRes?'disabled':''} onclick="paresGuardar()">✔ Armar estos partidos</button><button class="btn sm gris" onclick="paresSet([[0,0]]);paresPintar()">Borrar lista</button></div>`+
+  (hayRes?'<div class="msg">Ya hay resultados de zonas cargados: para rearmar hay que anularlos primero.</div>':'')}
+function parElegir(i,k,v){window._pares[i][k]=+v||0;paresSet(window._pares);paresPintar()}
+function parAgregar(){window._pares.push([0,0]);paresSet(window._pares);paresPintar()}
+function parQuitar(i){window._pares.splice(i,1);paresSet(window._pares);paresPintar()}
+function paresAsig(pares){
+  // tablero actual: Z[zona][lugar] = id
+  const Z=[...Array(16)].map(()=>[0,0,0,0]);S.players.forEach(p=>{if(p.grupo&&p.pos)Z[p.grupo.charCodeAt(0)-65][p.pos-1]=p.id});
+  if(Z.flat().some(v=>!v)){const libres=mezclar(S.players.filter(p=>!(p.grupo&&p.pos)).map(p=>p.id));Z.forEach(z=>z.forEach((v,i)=>{if(!v)z[i]=libres.pop()}))}
+  const donde=id=>{for(let g=0;g<16;g++){const i=Z[g].indexOf(id);if(i>=0)return[g,i]}};
+  const fijo=new Set();
+  const mover=(id,g,i)=>{const[g0,i0]=donde(id);const otro=Z[g][i];Z[g][i]=id;Z[g0][i0]=otro};
+  for(const[a,b]of pares){
+    const[ga,ia]=donde(a),[gb,ib]=donde(b);
+    if(ga===gb&&(ia>>1)===(ib>>1)){fijo.add(a);fijo.add(b);continue}       // ya se cruzan en la fecha 1
+    // casilla de 2 lugares (1-2 o 3-4) sin jugadores ya fijados: primero la de a, después la de b, si no cualquiera
+    const libre=(g,h)=>!fijo.has(Z[g][2*h])&&!fijo.has(Z[g][2*h+1]);
+    let c=libre(ga,ia>>1)?[ga,ia>>1]:libre(gb,ib>>1)?[gb,ib>>1]:null;
+    for(let g=0;!c&&g<16;g++)for(let h=0;!c&&h<2;h++)if(libre(g,h))c=[g,h];
+    if(!c)return null;
+    const[g,h]=c;
+    if(Z[g][2*h]===b||Z[g][2*h+1]===a){mover(b,g,2*h);mover(a,g,2*h+1)}else{mover(a,g,2*h);mover(b,g,2*h+1)}
+    fijo.add(a);fijo.add(b)}
+  const asig=[];Z.forEach((z,gi)=>z.forEach((id,i)=>asig.push({player:id,grupo:String.fromCharCode(65+gi),pos:i+1})));return asig}
+async function paresGuardar(){
+  const l=(window._pares||[]).filter(p=>p[0]||p[1]);
+  if(!l.length){alert('Elegí al menos un partido');return}
+  if(l.some(p=>!p[0]||!p[1])){alert('Cada partido tiene que tener los 2 jugadores');return}
+  const ids=l.flat();if(new Set(ids).size!==ids.length){alert('Un jugador no puede estar en dos partidos');return}
+  const asig=paresAsig(l);if(!asig||new Set(asig.map(a=>a.player)).size!==64){alert('No se pudieron acomodar los partidos');return}
+  if(!confirm('Se rearman las zonas con estos cruces (fecha 1):\n\n'+l.map(([a,b])=>S.by[a].nombre+' vs '+S.by[b].nombre).join('\n')+'\n\nLos pronósticos de zonas se borran. Los PINs NO cambian. ¿Confirmás?'))return;
+  try{const r=await rpc('mm_admin_sorteo',{p_apin:S.admin,p_asig:asig});if(!r.ok){alert(r.error);return}}catch(e){alert('Sin conexión: no se guardó');return}
+  toast('✔ Partidos armados');await cargar(true)}
 function cargarSorteo(){manSet(manGet());manPintar()}
 function manElegir(z,i,v){const m=window._man;m[z][i]=+v||0;manSet(m);manPintar()}
 function manLimpiar(){if(!confirm('¿Borrar lo cargado hasta ahora?'))return;manSet([...Array(16)].map(()=>[0,0,0,0]));manPintar()}
