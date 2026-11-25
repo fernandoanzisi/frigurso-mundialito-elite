@@ -1,4 +1,4 @@
-const CACHE = 'mundialito-v16';
+const CACHE = 'mundialito-v17';
 const PRECACHE = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './flyer-inicio.jpg', './flyer-premios.jpg', './flyer-puntuacion.jpg', './flyer-sede.png', './flyer-sorteo.png'];
 self.addEventListener('install', e => {
   // NO se llama skipWaiting solo: la página avisa y recién ahí se activa la versión nueva.
