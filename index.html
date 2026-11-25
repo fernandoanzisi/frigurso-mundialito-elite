@@ -548,15 +548,17 @@ function manGet(){let m=null;try{m=JSON.parse(localStorage.getItem('mm_man')||'n
   return m}
 function manSet(m){window._man=m;try{localStorage.setItem('mm_man',JSON.stringify(m))}catch(e){}}
 /* ---- armar partidos a mano: cada pareja va a la misma zona en lugares 1-2 o 3-4 (se cruzan en la fecha 1); el resto queda igual ---- */
+const PRUEBA_HASTA=new Date(2026,11,10,0,0,0); // hasta el 9/12 inclusive se puede rearmar aunque haya resultados (modo prueba)
+function paresLibre(){return new Date()<PRUEBA_HASTA}
 function paresGet(){let l=null;try{l=JSON.parse(localStorage.getItem('mm_pares')||'null')}catch(e){}return Array.isArray(l)&&l.length?l:[[0,0]]}
 function paresSet(l){window._pares=l;try{localStorage.setItem('mm_pares',JSON.stringify(l))}catch(e){}}
 function paresPintar(){const el=$('pares');if(!el)return;const l=window._pares||paresGet();window._pares=l;
-  const hayRes=S.matches.some(m=>m.fase==='G'&&m.estado!=='pendiente'),usados=new Set(l.flat().filter(Boolean));
+  const hayRes=S.matches.some(m=>m.fase==='G'&&m.estado!=='pendiente')&&!paresLibre(),usados=new Set(l.flat().filter(Boolean));
   const lista=S.players.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const opts=sel=>`<option value="0">— elegir jugador —</option>`+lista.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''} ${usados.has(p.id)&&p.id!==sel?'disabled':''}>${esc(p.bandera)} ${esc(p.nombre)}${p.grupo?' · Zona '+p.grupo:''}</option>`).join('');
   el.innerHTML=l.map((pr,i)=>`<div class="card" style="margin:6px 0"><div class="row sb"><b>Partido ${i+1}</b>${l.length>1?`<button class="btn sm gris" onclick="parQuitar(${i})">✕</button>`:''}</div><select class="in" style="margin-top:4px" onchange="parElegir(${i},0,this.value)">${opts(pr[0])}</select><div class="sub2" style="text-align:center;margin:2px 0">vs</div><select class="in" onchange="parElegir(${i},1,this.value)">${opts(pr[1])}</select></div>`).join('')+
   `<div class="row" style="margin:8px 0"><button class="btn sm gris" ${l.length>=32?'disabled':''} onclick="parAgregar()">＋ Agregar partido</button><button class="btn sm" ${hayRes?'disabled':''} onclick="paresGuardar()">✔ Armar estos partidos</button><button class="btn sm gris" onclick="paresSet([[0,0]]);paresPintar()">Borrar lista</button></div>`+
-  (hayRes?'<div class="msg">Ya hay resultados de zonas cargados: para rearmar hay que anularlos primero.</div>':'')}
+  (hayRes?'<div class="msg">Ya hay resultados de zonas cargados: para rearmar hay que anularlos primero.</div>':paresLibre()?'<div class="sub2">🧪 Modo prueba hasta el 9/12: se puede rearmar aunque haya resultados. Los resultados confirmados de partidos que siguen igual se conservan; los demás se anulan. Desde el 10/12 se bloquea si hay resultados.</div>':'')}
 function parElegir(i,k,v){window._pares[i][k]=+v||0;paresSet(window._pares);paresPintar()}
 function parAgregar(){window._pares.push([0,0]);paresSet(window._pares);paresPintar()}
 function parQuitar(i){window._pares.splice(i,1);paresSet(window._pares);paresPintar()}
@@ -584,9 +586,29 @@ async function paresGuardar(){
   if(!l.length){alert('Elegí al menos un partido');return}
   if(l.some(p=>!p[0]||!p[1])){alert('Cada partido tiene que tener los 2 jugadores');return}
   const ids=l.flat();if(new Set(ids).size!==ids.length){alert('Un jugador no puede estar en dos partidos');return}
-  const asig=paresAsig(l);if(!asig||new Set(asig.map(a=>a.player)).size!==64){alert('No se pudieron acomodar los partidos');return}
-  if(!confirm('Se rearman las zonas con estos cruces (fecha 1):\n\n'+l.map(([a,b])=>S.by[a].nombre+' vs '+S.by[b].nombre).join('\n')+'\n\nLos pronósticos de zonas se borran. Los PINs NO cambian. ¿Confirmás?'))return;
-  try{const r=await rpc('mm_admin_sorteo',{p_apin:S.admin,p_asig:asig});if(!r.ok){alert(r.error);return}}catch(e){alert('Sin conexión: no se guardó');return}
+  const conRes=S.matches.filter(m=>m.estado!=='pendiente');
+  if(conRes.some(m=>m.fase==='G')&&!paresLibre()){alert('Ya hay resultados de zonas cargados: no se puede rearmar');return}
+  // partidos confirmados de la fecha 1 de jugadores que no estás reacomodando: se dejan fijos para no perder su resultado
+  const elegidos=new Set(ids),fijos=conRes.filter(m=>m.fase==='G'&&m.estado==='confirmado'&&m.fecha_n===1&&!elegidos.has(m.a_id)&&!elegidos.has(m.b_id)).map(m=>[m.a_id,m.b_id]);
+  const asig=paresAsig(fijos.concat(l));if(!asig||new Set(asig.map(a=>a.player)).size!==64){alert('No se pudieron acomodar los partidos');return}
+  // qué resultados sobreviven: los confirmados de zonas cuyo par de jugadores sigue enfrentándose
+  const pos=Object.fromEntries(asig.map(a=>[a.player,a])),CR=[[1,2],[3,4],[1,3],[2,4],[1,4],[2,3]];
+  const sigue=m=>{const a=pos[m.a_id],b=pos[m.b_id];return a&&b&&a.grupo===b.grupo&&CR.some(([x,y])=>(a.pos===x&&b.pos===y)||(a.pos===y&&b.pos===x))};
+  const guardar=conRes.filter(m=>m.fase==='G'&&m.estado==='confirmado'&&sigue(m)),pierden=conRes.length-guardar.length;
+  if(!confirm('Se rearman las zonas con estos cruces (fecha 1):\n\n'+l.map(([a,b])=>S.by[a].nombre+' vs '+S.by[b].nombre).join('\n')+
+    (conRes.length?`\n\nResultados: se conservan ${guardar.length}${pierden?`, se anulan ${pierden}`:''}.`:'')+'\n\nLos pronósticos de zonas se borran. Los PINs NO cambian. ¿Confirmás?'))return;
+  try{
+    // anular de la final hacia atrás (un partido no se anula si el siguiente ya tiene resultado)
+    for(const f of ['F','T3','SF','QF','R16','G'])for(const m of conRes.filter(x=>x.fase===f)){const r=await rpc('mm_admin_anular',{p_apin:S.admin,p_match:m.id});if(!r.ok){alert('No pude anular un resultado: '+r.error);await cargar(true);return}}
+    const r=await rpc('mm_admin_sorteo',{p_apin:S.admin,p_asig:asig});if(!r.ok){alert(r.error);await cargar(true);return}
+    await cargar(true);let mal=0;
+    for(const o of guardar){const n=S.matches.find(m=>m.fase==='G'&&((m.a_id===o.a_id&&m.b_id===o.b_id)||(m.a_id===o.b_id&&m.b_id===o.a_id)));if(!n){mal++;continue}
+      const dir=n.a_id===o.a_id;let x;
+      if(o.a_score!=null&&o.b_score!=null)x=await rpc('mm_admin_marcador',{p_apin:S.admin,p_match:n.id,p_a:dir?o.a_score:o.b_score,p_b:dir?o.b_score:o.a_score});
+      else x=await rpc('mm_admin_resultado',{p_apin:S.admin,p_match:n.id,p_ganador:o.ganador_id,p_empate:!!o.empate,p_margen:o.margen});
+      if(!x||!x.ok)mal++}
+    if(mal)alert(mal+' resultado(s) no se pudieron volver a cargar: cargalos a mano.');
+  }catch(e){alert('Se cortó la conexión a mitad de camino: revisá las zonas y volvé a armar');await cargar(true);return}
   toast('✔ Partidos armados');await cargar(true)}
 function cargarSorteo(){manSet(manGet());manPintar()}
 function manElegir(z,i,v){const m=window._man;m[z][i]=+v||0;manSet(m);manPintar()}
