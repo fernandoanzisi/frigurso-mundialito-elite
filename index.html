@@ -227,10 +227,11 @@ async function rpc(fn,args){if(DEMO)return DM.rpc(fn,args||{});const r=await fet
 function editando(){const a=document.activeElement;return !!(document.querySelector('#sheet:not(.hide)')||(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))||document.querySelector('details[open]')||[...document.querySelectorAll('video')].some(v=>v.currentTime>0&&!v.ended))}
 async function cargar(silencio,liv){
   try{
-    if(liv&&S.cargado){const [ma,cf]=await Promise.all([rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S.err='';S.last=Date.now();if(!editando())pintar();return}
+    if(liv&&S.cargado){const [ma,cf]=await Promise.all([rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S.err='';S.last=Date.now();
+      if(JSON.stringify(S.cfg.sorteo||null)===S._sv){if(!editando())pintar();return}}   // si cambió el sorteo sigue abajo: recarga completa (zonas nuevas)
     const [pl,ma,cf]=await Promise.all([rest('mm_players','select=*&order=id'),rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);
     pl.forEach(p=>p.fh=fh(p.bandera));S.players=pl;S.by={};pl.forEach(p=>S.by[p.id]=p);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);
-    S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);
+    S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S._sv=JSON.stringify(S.cfg.sorteo||null);
     S.rank=await rpc('mm_ranking');
     if(S.ses&&S.ses.id){let r=null;try{r=await rpc('mm_mis_picks2',{p_player:S.ses.id,p_pin:S.ses.pin})}catch(e){}
       if(r&&r.ok){S.picks={};S.pm={};Object.entries(r.picks).forEach(([k,v])=>{S.picks[k]=v.pick;if(v.pa!=null&&v.pb!=null)S.pm[k]={a:v.pa,b:v.pb}})}
@@ -473,7 +474,7 @@ function vPos(){
     let h=tabs+(yo?`<div class="prog"><span>Tu puesto</span><b>${pos?pos+'º de '+rk.length:'sin puntos todavía'}</b></div>`:'');
     h+=`<div class="card"><div class="list">${rk.length?rk.map((x,i)=>{const p=S.by[x.player_id]||{};return `<div class="it" ${x.player_id===yo?'style="background:#fff5d6;margin:0 -12px;padding-left:12px;padding-right:12px"':''}><b style="width:26px;color:var(--tx3)">${i+1}</b><span class="fl">${p.fh||''}</span><div class="g"><b>${esc(p.nombre)}</b><span>${x.exactos||0} exactos · ${x.aciertos} ganadores acertados de ${x.jugados}</span></div><b style="font-size:17px">${x.puntos}</b></div>`}).join(''):'<div class="sub2">Todavía no hay partidos jugados con pronósticos.</div>'}</div></div>
     <div class="sub2" style="margin:8px 16px">Marcador exacto: 3 puntos · ganador (o empate) acertado: 1 punto · igual en todas las fases.</div>`;return h}
-  const gs=grupos();if(!gs.length)return tabs+'<div class="msg">Las zonas todavía no se sortearon. Cuando la organización haga el sorteo, vas a ver las 16 tablas acá.</div>';
+  const gs=grupos();if(!gs.length)return tabs+(sorteoVivoHTML()||'<div class="msg">Las zonas todavía no se sortearon. Cuando la organización haga el sorteo, vas a ver las 16 tablas acá.</div>');
   const yoG=S.ses&&S.ses.id&&S.by[S.ses.id]&&S.by[S.ses.id].grupo;
   const chips=`<div class="chips"><button class="${S.grp==='*'?'on':''}" onclick="S.grp='*';pintar()">Todos</button>${yoG?`<button class="${S.grp==='mi'?'on':''}" onclick="S.grp='mi';pintar()">Mi grupo</button>`:''}${gs.map(g=>`<button class="${S.grp===g?'on':''}" onclick="S.grp='${g}';pintar()">${g}</button>`).join('')}</div>`;
   const ver=S.grp==='*'?gs:S.grp==='mi'?[yoG]:[S.grp];
@@ -490,9 +491,33 @@ function cuenta(){const ini=new Date(2026,11,12,0,0,0),fin=new Date(2026,11,14,0
 // Días del torneo (12 y 13/12, hora del celular): los videos se esconden para no gastar datos en la cancha
 function diaTorneo(){const y=new Date();return y>=new Date(2026,11,12,0,0,0)&&y<new Date(2026,11,14,0,0,0)}
 function visor(src){abrirSheet(`<button class="x" onclick="cerrar()">✕</button><img src="${src}" style="width:100%;border-radius:12px;margin-top:8px" alt="">`)}
+/* ---- sorteo en vivo (tablero que publica la organización mientras sortean) + tu zona ---- */
+const YT='https://www.youtube.com/@footgolfelite';
+function btnYT(txt){return `<a class="btn" href="${YT}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px;text-decoration:none;background:#ff0000;border-color:#ff0000;color:#fff">${txt}</a>`}
+function sorteoEnVivo(){const v=S.cfg&&S.cfg.sorteo_vivo;return !!(v&&v.z&&!grupos().length)}
+function sorteoVivoHTML(){
+  if(!sorteoEnVivo())return '';const v=S.cfg.sorteo_vivo,n=v.n||0,u=v.ult&&S.by[v.ult];
+  let uz='';v.z.forEach((z,gi)=>{if(z.includes(v.ult))uz=String.fromCharCode(65+gi)});
+  const zona=(z,gi)=>`<div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:6px 7px;min-width:0"><b style="font-size:12px;color:var(--rojo)">ZONA ${String.fromCharCode(65+gi)}</b>${z.map(id=>{const p=id&&S.by[id];const hi=id&&id===v.ult;return `<div style="font-size:11.5px;line-height:1.25;padding:3px 4px;margin-top:2px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${hi?'background:#ffe27a;font-weight:800;':''}${p?'':'color:var(--tx3)'}">${p?p.fh+' '+esc(p.nombre):'· · ·'}</div>`}).join('')}</div>`;
+  return `<div class="card" style="margin:12px;border:2px solid #ff0000">
+   <div class="row sb"><b style="font-size:16px"><span style="color:#ff0000">●</span> SORTEO EN VIVO</b><span class="tag" style="background:#ff0000;color:#fff">${n} de 64</span></div>
+   <div style="height:6px;background:#eee;border-radius:9px;margin:8px 0;overflow:hidden"><div style="height:100%;width:${Math.round(n*100/64)}%;background:#ff0000"></div></div>
+   ${u?`<div class="msg" style="margin:6px 0;background:#fff8e1">Último en salir: <b>${u.fh} ${esc(u.nombre)}</b> (${esc(u.pais)}) → <b>Zona ${uz}</b></div>`:''}
+   ${n>=64?'<div class="msg ok" style="margin:6px 0">✅ ¡Sorteo completo! En un momento la organización lo guarda y se arman todos los partidos.</div>':''}
+   <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px">${v.z.map(zona).join('')}</div>
+   ${btnYT('▶ Ver la transmisión en YouTube')}<div class="sub2" style="text-align:center;margin-top:6px">Se actualiza solo · puede ir unos segundos atrás de la transmisión</div></div>`}
+function tuZonaHTML(){
+  if(!S.ses||!S.ses.id)return '';const yo=S.by[S.ses.id];if(!yo||!yo.grupo)return '';
+  if(S.matches.some(m=>m.fase==='G'&&m.estado==='confirmado'&&soyDe(m)))return '';   // ya empezó a jugar: no hace falta
+  const ms=S.matches.filter(m=>m.fase==='G'&&soyDe(m)).sort((a,b)=>a.fecha_n-b.fecha_n);
+  return `<div class="card" style="margin:12px;background:linear-gradient(135deg,#0b3a63,#1c7fc0);color:#fff;border:0">
+   <div style="font-size:12px;letter-spacing:.12em;font-weight:900;opacity:.9">🎲 ¡YA SALIÓ EL SORTEO!</div>
+   <div style="font-size:22px;font-weight:900;margin:4px 0 8px">${yo.fh} Estás en la Zona ${esc(yo.grupo)}</div>
+   ${ms.map(m=>{const r=rival(m);return `<div class="row" style="padding:6px 0;border-top:1px solid rgba(255,255,255,.2);flex-wrap:nowrap"><span style="width:62px;flex:none;font-size:12px;opacity:.85">Fecha ${m.fecha_n}</span><b style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">vs ${r?r.fh+' '+esc(r.nombre):'—'}</b><span style="flex:none;font-size:12px;opacity:.85">${r?esc(r.pais):''}</span></div>`}).join('')}
+   <div style="font-size:12px;opacity:.85;margin-top:6px">¡Suerte! Ya podés pronosticar los partidos de tu zona en Pronósticos.</div></div>`}
 function vTorneo(){
   const conf=S.matches.filter(m=>m.estado==='confirmado').length,cd=cuenta();
-  let h=onlineHTML();
+  let h=onlineHTML()+sorteoVivoHTML()+tuZonaHTML();
   if(S.ses&&S.ses.id){
     const mios=S.matches.filter(m=>soyDe(m)&&m.estado!=='confirmado').sort((a,b)=>a.id-b.id);
     h+='<h2 class="sec">Mis partidos</h2>';
@@ -508,7 +533,7 @@ function vTorneo(){
   <div class="card" style="margin:12px"><div class="row"><span style="font-size:30px">📍</span><div><b style="font-size:16px">Sede oficial: Cancha de Golf de Navarro</b><div class="sub2">Open · RAA 1000 · Liga Pro · FENOBA · Tour Local</div></div></div><img src="flyer-sede.png" alt="Navarro, sede oficial" loading="lazy" style="width:100%;border-radius:12px;margin-top:10px;display:block" onclick="visor('flyer-sede.png')"></div>
   ${diaTorneo()?`<div class="card" style="margin:12px;text-align:center"><b style="font-size:16px">🔴 ¡Hoy se juega el Mundialito!</b><div class="sub2" style="margin:6px 0 10px">Resultados, posiciones y quién terminó, al instante.</div><button class="btn" onclick="go('vivo')">Ver En vivo</button></div>`:`<div class="card" style="margin:12px"><b>🌎 Presentamos a los 64 jugadores</b><video src="video-confirmados.mp4?v=64c" controls playsinline preload="metadata" style="width:100%;border-radius:12px;margin-top:8px;background:#000;display:block"></video></div>
   <div class="card" style="margin:12px"><b>🎥 Los jugadores hablan · Video del Mundialito</b><a href="https://www.instagram.com/reel/DgIyflXAsWE/" target="_blank" rel="noopener" style="display:block;position:relative;margin-top:8px"><img src="reel-mundialito.jpg" alt="Video del Mundialito en Instagram" loading="lazy" style="width:100%;border-radius:12px;display:block"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;font-size:30px;padding-left:5px">▶</span></span></a><a class="btn" href="https://www.instagram.com/reel/DgIyflXAsWE/" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px;text-decoration:none">▶ Ver en Instagram</a></div>`}
-  <div class="card" style="margin:12px"><div class="row"><span style="font-size:30px">🎲</span><div><b style="font-size:16px">Gran Sorteo · viernes 27 de noviembre</b><div class="sub2">En vivo por YouTube | FootGolf Elite · 16 zonas, 64 jugadores, 64 países</div></div></div><img src="flyer-sorteo.png" alt="Gran Sorteo" loading="lazy" style="width:100%;border-radius:12px;margin-top:10px;display:block" onclick="visor('flyer-sorteo.png')"></div>
+  <div class="card" style="margin:12px"><div class="row"><span style="font-size:30px">🎲</span><div><b style="font-size:16px">Gran Sorteo · viernes 27 de noviembre</b><div class="sub2">En vivo por YouTube | FootGolf Elite · 16 zonas, 64 jugadores, 64 países</div></div></div><img src="flyer-sorteo.png" alt="Gran Sorteo" loading="lazy" style="width:100%;border-radius:12px;margin-top:10px;display:block" onclick="visor('flyer-sorteo.png')">${btnYT('▶ Ver el sorteo en YouTube')}<div class="sub2" style="margin-top:6px;text-align:center">Y mientras sortean, mirá las zonas llenarse acá en la app 🎲</div></div>
   <div class="row" style="margin:0 12px;gap:8px"><div class="card" style="flex:1;margin:0;text-align:center"><b style="font-size:20px">${conf}</b><div class="sub2">partidos jugados</div></div><div class="card" style="flex:1;margin:0;text-align:center"><b style="font-size:20px">${S.matches.filter(m=>['cargado','disputado'].includes(m.estado)).length}</b><div class="sub2">por confirmar</div></div><div class="card" style="flex:1;margin:0;text-align:center"><b style="font-size:20px">${S.matches.filter(m=>m.fase==='G'&&m.estado==='pendiente'&&m.a_id&&m.b_id).length}</b><div class="sub2">pendientes</div></div></div>`;
   h+=`<h2 class="sec">Las 4 copas · ${$m(3250)} en premios</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px">${COPAS.map(c=>`<div onclick="S.tab='pos';S.posTab='copas';S.copaSel='${c.l}';pintar();window.scrollTo(0,0)" style="background:${c.bg};color:#fff;border-radius:14px;padding:14px 10px;text-align:center;cursor:pointer"><div style="font-size:30px">${c.i}</div><div style="font-weight:900;letter-spacing:.04em">COPA ${c.k.toUpperCase()}</div><div style="font-size:11.5px;opacity:.9">${c.pos}</div><div style="margin-top:6px;font-weight:800;font-size:15px;color:#ffe9a8">${$m(PREMIOS[c.k][0])}</div><div style="font-size:10.5px;opacity:.85">al campeón</div></div>`).join('')}</div>
   <div class="sub2" style="margin:8px 16px">Al terminar las 16 zonas, cada jugador va a la copa que le corresponde por su posición en la zona (1º a 4º). Tocá una copa para ver su cuadro.</div>
@@ -707,11 +732,17 @@ function paisFlag(f){return f==='ENG'?ENG:f==='SCT'?SCT:f==='WLS'?WLS:fa2(f)}
 function elegirPais(i){const x=PAISES[i];if(!x)return;$('rpp').value=x[0];$('rpc').value=x[1];$('rpb').value=paisFlag(x[2]);$('rpk').value=x[3];prevBandera()}
 function prevBandera(){const e=$('rpv');if(e)e.innerHTML=fh($('rpb').value.trim())}
 /* ---- sorteo en vivo cargado a mano: 16 zonas x 4 lugares. El orden de los lugares define los cruces (1-2, 3-4 / 1-3, 2-4 / 1-4, 2-3) ---- */
-function manGet(){let m=null;try{m=JSON.parse(localStorage.getItem('mm_man')||'null')}catch(e){}
-  if(!Array.isArray(m)||m.length!==16||m.some(z=>!Array.isArray(z)||z.length!==4)){m=[...Array(16)].map(()=>[0,0,0,0]);
-    // si ya hay sorteo guardado, partir de ese
-    S.players.forEach(p=>{if(p.grupo&&p.pos)m[p.grupo.charCodeAt(0)-65][p.pos-1]=p.id})}
+function manGet(){const v=S.cfg&&S.cfg.sorteo_vivo;   // 1º lo publicado en vivo (se puede seguir desde otro celular)
+  if(v&&Array.isArray(v.z)&&v.z.length===16&&v.z.every(z=>Array.isArray(z)&&z.length===4))return v.z.map(z=>z.map(x=>+x||0));
+  const m=[...Array(16)].map(()=>[0,0,0,0]);   // si no, el sorteo guardado (o vacío)
+  S.players.forEach(p=>{if(p.grupo&&p.pos)m[p.grupo.charCodeAt(0)-65][p.pos-1]=p.id});
   return m}
+// publica el tablero para que todos lo vean; si falla, reintenta solo (siempre manda el último estado)
+async function manPublicar(ult){if(ult)S._pubUlt=ult;if(S._pubOn){S._pubOtra=true;return}S._pubOn=true;
+  try{do{S._pubOtra=false;const r=await rpc('mm_admin_sorteo_vivo',{p_apin:S.admin,p_z:window._man,p_ult:S._pubUlt||null});if(!r||!r.ok)throw new Error(r&&r.error)}while(S._pubOtra);manEstado(true)}
+  catch(e){manEstado(false);clearTimeout(S._pubT);S._pubT=setTimeout(()=>manPublicar(),4000)}
+  finally{S._pubOn=false}}
+function manEstado(ok){const e=$('manpub');if(e)e.innerHTML=ok?'📡 Publicado: todos lo están viendo en la app':'⚠ Sin conexión: no se publicó todavía, reintentando…';if(e)e.style.color=ok?'#0f6a37':'#8a1b1b'}
 function manSet(m){window._man=m;try{localStorage.setItem('mm_man',JSON.stringify(m))}catch(e){}}
 /* ---- armar partidos a mano: cada pareja va a la misma zona en lugares 1-2 o 3-4 (se cruzan en la fecha 1); el resto queda igual ---- */
 const PRUEBA_HASTA=new Date(2026,11,10,0,0,0); // hasta el 9/12 inclusive se puede rearmar aunque haya resultados (modo prueba)
@@ -777,12 +808,12 @@ async function paresGuardar(){
   }catch(e){alert('Se cortó la conexión a mitad de camino: revisá las zonas y volvé a armar');await cargar(true);return}
   toast('✔ Partidos armados');await cargar(true)}
 function cargarSorteo(){manSet(manGet());manPintar()}
-function manElegir(z,i,v){const m=window._man;m[z][i]=+v||0;manSet(m);manPintar()}
-function manLimpiar(){if(!confirm('¿Borrar lo cargado hasta ahora?'))return;manSet([...Array(16)].map(()=>[0,0,0,0]));manPintar()}
+function manElegir(z,i,v){const m=window._man;m[z][i]=+v||0;manSet(m);manPintar();manPublicar(+v||0)}
+function manLimpiar(){if(!confirm('¿Borrar lo cargado hasta ahora? (también se borra del tablero en vivo)'))return;manSet([...Array(16)].map(()=>[0,0,0,0]));S._pubUlt=null;manPintar();manPublicar()}
 function manPintar(){
   const m=window._man,usados=new Set(m.flat().filter(Boolean)),lista=S.players.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)),falta=64-usados.size;
   const opts=(sel)=>`<option value="0">— elegir —</option>`+lista.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''} ${usados.has(p.id)&&p.id!==sel?'disabled':''}>${esc(p.bandera)} ${esc(p.nombre)} (${esc(p.codigo)})</option>`).join('');
-  $('srt').innerHTML=`<div class="sub2" style="margin:8px 0">Cargá cada zona en el orden en que salió. Lo que cargás se guarda en este celular/compu aunque cierres la app. Los ya elegidos aparecen deshabilitados.</div>
+  $('srt').innerHTML=`<div class="sub2" style="margin:8px 0">🎲 <b>Sorteo en vivo:</b> cada vez que sale un jugador, elegilo en el lugar de su zona (en cualquier orden). Al instante se publica y <b>todos lo ven llenarse en la app</b>. Dentro de cada zona, poné los lugares en el orden en que salieron (define quién juega con quién en cada fecha). Los ya elegidos aparecen deshabilitados. Al final tocá <b>Guardar sorteo</b>.</div><div id="manpub" class="sub2" style="margin:4px 0;font-weight:700"></div>
   <div class="msg" style="margin:6px 0">Cargados: <b>${usados.size}</b> de 64${falta?` · faltan ${falta}`:' · ¡completo!'}</div>`+
   m.map((z,gi)=>{const L=String.fromCharCode(65+gi),n=z.filter(Boolean).length;return `<div class="card" style="margin:6px 0"><b>ZONA ${L}</b> <span class="sub2">${n}/4</span>${z.map((v,i)=>`<select class="in" style="margin-top:4px" onchange="manElegir(${gi},${i},this.value)">${opts(v)}</select>`).join('')}</div>`}).join('')+
   `<div class="row" style="margin:10px 0"><button class="btn sm" ${falta?'disabled':''} onclick="manGuardar()">✔ Guardar sorteo (arma los 96 partidos)</button><button class="btn sm gris" onclick="manLimpiar()">Borrar todo</button></div>`}
@@ -791,7 +822,9 @@ async function manGuardar(){const m=window._man,ids=m.flat();
   if(!confirm('Se arman los 96 partidos de grupos con este sorteo. ¿Confirmás?'))return;
   const asig=[];m.forEach((z,gi)=>z.forEach((id,i)=>asig.push({player:id,grupo:String.fromCharCode(65+gi),pos:i+1})));
   const r=await rpc('mm_admin_sorteo',{p_apin:S.admin,p_asig:asig});if(!r.ok){alert(r.error);return}
-  try{localStorage.removeItem('mm_man')}catch(e){}toast('✔ Sorteo guardado');await cargar(true)}
+  try{localStorage.removeItem('mm_man')}catch(e){}
+  try{await rpc('mm_admin_sorteo_vivo',{p_apin:S.admin,p_z:null,p_ult:null})}catch(e){}   // el tablero en vivo ya no hace falta: ahora están las zonas de verdad
+  toast('✔ Sorteo guardado: zonas y 96 partidos armados');await cargar()}
 function azar(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
 function mezclar(l){l=l.slice();for(let i=l.length-1;i>0;i--){const j=azar(i+1);[l[i],l[j]]=[l[j],l[i]]}return l}
 function sortear(){
@@ -883,7 +916,8 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t
   if(!S.cargado){$('login').classList.remove('hide');$('lg1').innerHTML='<div class="err" style="margin-top:30px">'+esc(S.err)+'</div><div class="lk" onclick="location.reload()">Reintentar</div>';return}
   if(S.ses&&S.ses.id){const r=await rpc('mm_login',{p_player:S.ses.id,p_pin:S.ses.pin}).catch(()=>({ok:true}));if(!r.ok){S.ses=null;localStorage.removeItem('mm_ses')}}
   if(S.ses)entrar();else loginUI();
-  (function tick(){const ms=(S.tab==='vivo'?12000:25000)+Math.random()*5000;setTimeout(()=>{if(!document.hidden&&S.ses){S._n=(S._n||0)+1;cargar(true,S._n%6!==0).finally(tick)}else tick()},ms)})();
+  (function tick(){const pre=!grupos().length;   // antes de guardar el sorteo: más seguido, para ver el tablero en vivo apenas arranca
+    const ms=(sorteoEnVivo()?6000:pre?9000:S.tab==='vivo'?12000:25000)+Math.random()*(pre?2000:5000);setTimeout(()=>{if(!document.hidden&&S.ses){S._n=(S._n||0)+1;cargar(true,S._n%6!==0).finally(tick)}else tick()},ms)})();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.ses){cargar(true);latido()}});
 })();
 /* service worker: avisa y recarga cuando hay versión nueva */
