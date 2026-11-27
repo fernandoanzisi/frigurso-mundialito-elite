@@ -108,7 +108,8 @@ label.l{display:block;font-size:12px;color:var(--tx2);margin:10px 0 4px;font-wei
 <div id="app" class="hide">
  <header class="top"><div class="t">
   <svg class="logo" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff"/><circle cx="32" cy="32" r="26" fill="#D7263D"/><path d="M18 40 L46 24" stroke="#5FB0E8" stroke-width="7" stroke-linecap="round"/><circle cx="32" cy="32" r="8" fill="#fff"/><path d="M32 26l5 4-2 6h-6l-2-6z" fill="#14181f"/></svg>
-  <div>MUNDIALITO ELITE 2026<small>FRIGURSO FOOTGOLF · MATCH PLAY</small></div><div class="sp"></div><div class="yo" id="yo" onclick="go('mas')"></div></div></header>
+  <div>MUNDIALITO ELITE 2026<small>FRIGURSO FOOTGOLF · MATCH PLAY</small></div><div class="sp"></div><button id="refbtn" onclick="refrescar()" aria-label="Actualizar" style="flex:none;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:50%;width:34px;height:34px;font-size:19px;font-weight:900;line-height:1">↻</button><div class="yo" id="yo" onclick="go('mas')"></div></div></header>
+ <div id="ptr" style="height:0;overflow:hidden;text-align:center;font-weight:800;color:var(--rojo);font-size:13px;display:flex;align-items:flex-end;justify-content:center;transition:height .15s"></div>
  <div id="msgbar"></div>
  <main id="main"></main>
 </div>
@@ -228,7 +229,7 @@ function editando(){const a=document.activeElement;return !!(document.querySelec
 async function cargar(silencio,liv){
   try{
     if(liv&&S.cargado){const [ma,cf]=await Promise.all([rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S.err='';S.last=Date.now();
-      if(JSON.stringify(S.cfg.sorteo||null)===S._sv){if(!editando())pintar();return}}   // si cambió el sorteo sigue abajo: recarga completa (zonas nuevas)
+      if(JSON.stringify(S.cfg.sorteo||null)===S._sv){pintarBarra();if(!editando())pintar();return}}   // si cambió el sorteo sigue abajo: recarga completa (zonas nuevas)
     const [pl,ma,cf]=await Promise.all([rest('mm_players','select=*&order=id'),rest('mm_matches','select=*&order=id'),rest('mm_config','select=*')]);
     pl.forEach(p=>p.fh=fh(p.bandera));S.players=pl;S.by={};pl.forEach(p=>S.by[p.id]=p);S.matches=ma;S.mby={};ma.forEach(m=>S.mby[m.id]=m);
     S.cfg={};cf.forEach(c=>S.cfg[c.clave]=c.valor);S._sv=JSON.stringify(S.cfg.sorteo||null);
@@ -314,7 +315,7 @@ function empateCritico(g){const t=tabla(g);if(!t.completo||t.manual)return false
 function pintar(){
   if(!S.cargado){$('main').innerHTML='<div class="msg">Cargando…</div>';return}
   $('yo').textContent=S.ses?(S.ses.id?(S.by[S.ses.id]?S.by[S.ses.id].bandera+' '+S.by[S.ses.id].nombre.split(' ')[0]:'Yo'):'👀 Espectador'):'';
-  $('msgbar').innerHTML=(DEMO?'<div class="msg">🧪 <b>VISTA PREVIA</b> con datos de ejemplo: cualquier PIN entra y nada se guarda. El torneo real se activa cuando se conecte el servidor.</div>':'')+(S.err?`<div class="msg bad">${esc(S.err)}</div>`:'');
+  pintarBarra();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
   const f={torneo:vTorneo,vivo:vVivo,pos:vPos,pron:vPron,fix:vFix,mas:vMas,campeones:vCampeones}[S.tab]||vTorneo;$('main').innerHTML=f();if(S.ses&&S.ses.id)chequearFestejo();if(S.tab==='mas'&&S.admin)paresPintar();
 }
@@ -515,6 +516,29 @@ function tuZonaHTML(){
    <div style="font-size:22px;font-weight:900;margin:4px 0 8px">${yo.fh} Estás en la Zona ${esc(yo.grupo)}</div>
    ${ms.map(m=>{const r=rival(m);return `<div class="row" style="padding:6px 0;border-top:1px solid rgba(255,255,255,.2);flex-wrap:nowrap"><span style="width:62px;flex:none;font-size:12px;opacity:.85">Fecha ${m.fecha_n}</span><b style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">vs ${r?r.fh+' '+esc(r.nombre):'—'}</b><span style="flex:none;font-size:12px;opacity:.85">${r?esc(r.pais):''}</span></div>`}).join('')}
    <div style="font-size:12px;opacity:.85;margin-top:6px">¡Suerte! Ya podés pronosticar los partidos de tu zona en Pronósticos.</div></div>`}
+/* ---- aviso de la organización (arriba en todas las pantallas) ---- */
+function horaTxt(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function avisoHTML(a){const u=a.nivel==='urgente';return `<div style="margin:10px 12px;padding:10px 12px;border-radius:12px;background:${u?'#d7263d':'#0b3a63'};color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)"><div style="font-size:11px;letter-spacing:.1em;font-weight:900;opacity:.9">${u?'🚨 AVISO URGENTE':'📢 AVISO'} DE LA ORGANIZACIÓN · ${horaTxt(a.t)}</div><div style="font-size:15px;font-weight:700;margin-top:3px;white-space:pre-wrap">${esc(a.txt)}</div></div>`}
+function pintarBarra(){const a=S.cfg&&S.cfg.aviso;
+  if(a&&a.t&&S._avT&&a.t!==S._avT){toast('📢 Nuevo aviso de la organización');try{if(a.nivel==='urgente'&&navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}}
+  S._avT=a&&a.t||null;
+  $('msgbar').innerHTML=(DEMO?'<div class="msg">🧪 <b>VISTA PREVIA</b> con datos de ejemplo: cualquier PIN entra y nada se guarda. El torneo real se activa cuando se conecte el servidor.</div>':'')+(a&&a.txt?avisoHTML(a):'')+(S.err?`<div class="msg bad">${esc(S.err)}</div>`:'')}
+async function avisoPublicar(){const x=$('avt').value.trim(),n=$('avn').value;if(!x){alert('Escribí el aviso');return}
+  if(!confirm('Se publica para TODOS:\n\n'+x+'\n\n¿Confirmás?'))return;
+  try{const r=await rpc('mm_admin_aviso',{p_apin:S.admin,p_texto:x,p_nivel:n});if(!r.ok){alert(r.error);return}toast('📢 Aviso publicado');await cargar()}catch(e){alert('Sin conexión: no se publicó')}}
+async function avisoQuitar(){if(!confirm('¿Quitar el aviso de todos los celulares?'))return;
+  try{const r=await rpc('mm_admin_aviso',{p_apin:S.admin,p_texto:null,p_nivel:null});if(!r.ok){alert(r.error);return}toast('Aviso quitado');await cargar()}catch(e){alert('Sin conexión: no se quitó')}}
+/* ---- actualizar a mano: botón ↻ o deslizar hacia abajo desde arriba de la pantalla ---- */
+async function refrescar(){if(S._ref)return;S._ref=true;const b=$('refbtn');if(b){b.style.transition='transform .6s';b.style.transform='rotate(360deg)'}
+  try{await cargar(false);latido();toast(S.err?'⚠ '+S.err:'✔ Actualizado')}finally{S._ref=false;setTimeout(()=>{if(b){b.style.transition='none';b.style.transform='none'}},650)}}
+(function(){let y0=null,dy=0;const LIM=90,ptr=()=>$('ptr');
+  const off=()=>{const p=ptr();if(p){p.style.height='0';p.textContent=''}};
+  window.addEventListener('touchstart',e=>{y0=null;if(window.scrollY>0||$('app').classList.contains('hide')||document.querySelector('#sheet:not(.hide)'))return;y0=e.touches[0].clientY;dy=0},{passive:true});
+  window.addEventListener('touchmove',e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;const p=ptr();if(!p)return;
+    if(dy<=8||window.scrollY>0){p.style.height='0';return}p.style.height=Math.min(dy*.5,56)+'px';p.textContent=dy>LIM?'↻ Soltá para actualizar':'↓ Deslizá para actualizar'},{passive:true});
+  window.addEventListener('touchend',async()=>{if(y0==null)return;y0=null;const p=ptr();
+    if(dy>LIM&&window.scrollY<=0){if(p){p.style.height='34px';p.textContent='↻ Actualizando…'}await refrescar()}off();dy=0},{passive:true});
+})();
 function vTorneo(){
   const conf=S.matches.filter(m=>m.estado==='confirmado').length,cd=cuenta();
   let h=onlineHTML()+sorteoVivoHTML()+tuZonaHTML();
@@ -690,7 +714,11 @@ function adminHTML(){
   const sorteado=grupos().length>0,hayRes=S.matches.some(m=>m.fase==='G'&&m.estado!=='pendiente');
   const crit=grupos().filter(empateCritico);
   const resolver=S.matches.filter(m=>['cargado','disputado'].includes(m.estado));
+  const av=S.cfg.aviso;
   return `<div class="row sb"><b>🔐 Organización</b><button class="btn gris sm" onclick="S.admin=null;sessionStorage.removeItem('mm_adm');pintar()">Salir</button></div>
+  <details open style="margin-top:10px"><summary><b>📢 Aviso a todos</b> ${av?'<span class="tag warn">publicado</span>':''}</summary><div class="sub2" style="margin:6px 0">Aparece arriba en el celular de todos (jugadores y espectadores) en pocos segundos, hasta que lo quites. Ej: «⛈ Se demora la Fecha 2 por lluvia, arranca 15:30».</div>
+   ${av?`<div style="margin:6px 0">${avisoHTML(av)}</div>`:''}<textarea id="avt" class="in" maxlength="300" rows="3" placeholder="Escribí el aviso…" style="width:100%;box-sizing:border-box">${av?esc(av.txt):''}</textarea>
+   <div class="row" style="margin-top:6px"><select id="avn" class="in" style="width:auto"><option value="info" ${av&&av.nivel==='urgente'?'':'selected'}>ℹ️ Informativo (azul)</option><option value="urgente" ${av&&av.nivel==='urgente'?'selected':''}>🚨 Urgente (rojo)</option></select><button class="btn sm" onclick="avisoPublicar()">📢 Publicar</button>${av?'<button class="btn sm gris" onclick="avisoQuitar()">Quitar aviso</button>':''}</div></details>
   <details open style="margin-top:10px"><summary><b>⚽ Armar partidos (elegir quién juega con quién)</b></summary><div class="sub2" style="margin:6px 0">Elegí los cruces que quieras. Cada pareja queda en la misma zona y se enfrenta en la <b>fecha 1</b>. Los demás jugadores quedan donde estaban (solo se mueven los que hace falta). No toca los PINs. Solo se puede mientras no haya resultados de zonas cargados.</div><div id="pares"></div></details>
   <details open style="margin-top:10px"><summary><b>1. Sorteo de grupos</b></summary><div class="sub2" style="margin:6px 0">${sorteado?'Ya hay grupos armados.':'El sorteo oficial se hace por fuera de la app (en vivo, filmado): cuando te pasen el resultado, cargalo acá.'}</div>
    <div class="row"><button class="btn sm" ${hayRes?'disabled':''} onclick="cargarSorteo()">✍ Cargar sorteo en vivo</button><button class="btn sm gris" ${hayRes?'disabled':''} onclick="sortear()">🎲 Sorteo automático</button></div><div id="srt"></div></details>
