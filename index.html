@@ -408,7 +408,7 @@ function detalle(id){
     $('pkd').innerHTML=`🎯 Pronósticos (${t}): <b>${A.cd} ${pc(c.A)}</b>${m.fase==='G'?` · Empate ${pc(c.E)}`:''} · <b>${Bq.cd} ${pc(c.B)}</b>`}).catch(()=>{});
 }
 function abrirSheet(h){$('sheetIn').innerHTML=h;$('sheet').classList.remove('hide')}
-function cerrar(){$('sheet').classList.add('hide');$('sheet').style.zIndex=''}
+function cerrar(){if(typeof _ytP!=='undefined'&&_ytP){try{_ytP.destroy()}catch(e){}_ytP=null}$('sheet').classList.add('hide');$('sheet').style.zIndex=''}
 $('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')cerrar()});
 
 function formRes(id,adm){
@@ -493,8 +493,8 @@ function cuenta(){const ini=new Date(2026,11,12,0,0,0),fin=new Date(2026,11,14,0
 function diaTorneo(){const y=new Date();return y>=new Date(2026,11,12,0,0,0)&&y<new Date(2026,11,14,0,0,0)}
 function visor(src){abrirSheet(`<button class="x" onclick="cerrar()">✕</button><img src="${src}" style="width:100%;border-radius:12px;margin-top:8px" alt="">`)}
 /* ---- sorteo en vivo (tablero que publica la organización mientras sortean) + tu zona ---- */
-const YT='https://www.youtube.com/@footgolfelite';
-function btnYT(txt){return `<a class="btn" href="${YT}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px;text-decoration:none;background:#ff0000;border-color:#ff0000;color:#fff">${txt}</a>`}
+const YT_CANAL='https://www.youtube.com/@footgolfelite';
+function btnYT(txt){return `<a class="btn" href="${YT_CANAL}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px;text-decoration:none;background:#ff0000;border-color:#ff0000;color:#fff">${txt}</a>`}
 function sorteoEnVivo(){const v=S.cfg&&S.cfg.sorteo_vivo;return !!(v&&v.z&&!grupos().length)}
 function sorteoVivoHTML(){
   if(!sorteoEnVivo())return '';const v=S.cfg.sorteo_vivo,n=v.n||0,u=v.ult&&S.by[v.ult];
@@ -507,6 +507,47 @@ function sorteoVivoHTML(){
    ${n>=64?'<div class="msg ok" style="margin:6px 0">✅ ¡Sorteo completo! En un momento la organización lo guarda y se arman todos los partidos.</div>':''}
    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px">${v.z.map(zona).join('')}</div>
    ${btnYT('▶ Ver la transmisión en YouTube')}<div class="sub2" style="text-align:center;margin-top:6px">Se actualiza solo · puede ir unos segundos atrás de la transmisión</div></div>`}
+/* ---- "Así fue el sorteo": fragmentos de la transmisión del 27/11 en YouTube (no se descarga nada: se reproduce desde el canal) ---- */
+const SORTEO_YT='405xKMtqwYk';
+const SORTEO_URL='https://www.youtube.com/watch?v='+SORTEO_YT;
+// segundos dentro de la transmisión (3 h). Afinados mirando el video el 28/11.
+const SORTEO_RESUMEN=[[2035,2049],[9509,9540],[9873,9884]];            // arranque en el estudio · tablero completo y recorrido · plano final del tablero
+const SORTEO_TODO=[[9508,9860],[9873,9884]];                            // recorrido completo de la cámara, zona A → P
+const SORTEO_ZONAS={AB:[9513,9558],CD:[9562,9592],EF:[9595,9622],GH:[9625,9654],IJ:[9666,9703],KL:[9705,9743],MN:[9745,9797],OP:[9800,9860]};
+function miZonaSorteo(){const yo=S.ses&&S.ses.id&&S.by[S.ses.id];return yo&&yo.grupo?yo.grupo:null}
+function sorteoCardHTML(){
+  const g=miZonaSorteo();
+  return `<div class="card" style="margin:12px"><b style="font-size:16px">🎲 Así fue el sorteo</b><div class="sub2">Viernes 27/11 · en vivo por YouTube | FootGolf Elite</div>
+  <div onclick="verSorteo('resumen')" style="position:relative;margin-top:10px;cursor:pointer;border-radius:12px;overflow:hidden;background:#000">
+   <img src="sorteo-tablero.jpg" alt="El tablero completo del sorteo" loading="lazy" style="width:100%;display:block;opacity:.85">
+   <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="width:64px;height:64px;border-radius:50%;background:rgba(255,0,0,.92);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(0,0,0,.5)">▶</span></div>
+   <div style="position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.7);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px">Resumen · 1 min</div></div>
+  <button class="btn" style="display:block;width:100%;margin-top:10px" onclick="verSorteo('${g?'zona':'todo'}')">${g?'📍 Ver mi zona en el tablero (Zona '+esc(g)+')':'📍 Ver el tablero completo (Zona A → P)'}</button>
+  <a href="${SORTEO_URL}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px;font-size:13px;color:var(--tx3)">Ver la transmisión completa en YouTube ↗</a></div>`}
+var _ytApi=null,_ytP=null;
+function ytApi(){if(_ytApi)return _ytApi;_ytApi=new Promise((ok,ko)=>{if(window.YT&&YT.Player)return ok();const prev=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{if(prev)try{prev()}catch(e){};ok()};const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>{_ytApi=null;ko()};document.head.appendChild(sc);setTimeout(()=>{if(!(window.YT&&YT.Player)){_ytApi=null;ko()}},12000)});return _ytApi}
+function verSorteo(tipo){
+  const g=miZonaSorteo();let clips,tit,sub;
+  if(tipo==='zona'&&g){const k=Object.keys(SORTEO_ZONAS).find(k=>k.includes(g));clips=k?[SORTEO_ZONAS[k]]:SORTEO_TODO;tit='📍 Tu zona en el tablero';sub=`Zona ${g}${k?' (la cámara la muestra junto a la Zona '+k.replace(g,'')+')':''}`}
+  else if(tipo==='resumen'){clips=SORTEO_RESUMEN;tit='🎲 Así fue el sorteo';sub='Resumen: el arranque y el tablero completo'}
+  else{clips=SORTEO_TODO;tit='🎲 El tablero completo';sub='La cámara recorre las 16 zonas, de la A a la P'}
+  const link=`${SORTEO_URL}&t=${clips[0][0]}s`;
+  abrirSheet(`<button class="x" onclick="cerrarSorteo()">✕</button><b style="font-size:17px">${tit}</b><div class="sub2">${esc(sub)}</div>
+   <div style="position:relative;width:100%;aspect-ratio:16/9;margin-top:10px;border-radius:12px;overflow:hidden;background:#000"><div id="ytSorteo" style="width:100%;height:100%"></div>
+    <div id="ytCarga" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">Cargando video…</div></div>
+   <div id="ytParte" class="sub2" style="margin-top:6px;text-align:center">${clips.length>1?'Parte 1 de '+clips.length:''}</div>
+   <a href="${link}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--tx3)">¿No se ve? Abrilo en YouTube ↗</a>`);
+  ytApi().then(()=>{
+    if(!$('ytSorteo'))return;let i=0,sono=false;   // sono: la parte actual llegó a reproducirse (YouTube manda un 'terminó' falso al cargar la siguiente)
+    const rango=n=>({videoId:SORTEO_YT,startSeconds:clips[n][0],endSeconds:clips[n][1]});
+    _ytP=new YT.Player('ytSorteo',{width:'100%',height:'100%',videoId:SORTEO_YT,
+      playerVars:{start:clips[0][0],end:clips[0][1],autoplay:1,playsinline:1,rel:0,modestbranding:1},
+      events:{onReady:e=>{const c=$('ytCarga');if(c)c.remove();try{e.target.playVideo()}catch(_){}},
+        onStateChange:e=>{if(e.data===1)sono=true;if(e.data===0&&sono&&i<clips.length-1){sono=false;i++;const t=$('ytParte');if(t)t.textContent='Parte '+(i+1)+' de '+clips.length;e.target.loadVideoById(rango(i))}},
+        onError:()=>{const c=$('ytCarga');if(c)c.innerHTML=`<a href="${link}" target="_blank" rel="noopener" style="color:#fff">No se pudo cargar acá. Tocá para verlo en YouTube ↗</a>`}}});
+  }).catch(()=>{const c=$('ytCarga');if(c)c.innerHTML=`<a href="${link}" target="_blank" rel="noopener" style="color:#fff;text-align:center;padding:12px">Sin conexión con YouTube. Tocá para abrirlo en YouTube ↗</a>`});
+}
+function cerrarSorteo(){cerrar()}   // cerrar() también apaga el video (✕, tocar afuera o botón atrás)
 function tuZonaHTML(){
   if(!S.ses||!S.ses.id)return '';const yo=S.by[S.ses.id];if(!yo||!yo.grupo)return '';
   if(S.matches.some(m=>m.fase==='G'&&m.estado==='confirmado'&&soyDe(m)))return '';   // ya empezó a jugar: no hace falta
@@ -515,7 +556,7 @@ function tuZonaHTML(){
    <div style="font-size:12px;letter-spacing:.12em;font-weight:900;opacity:.9">🎲 ¡YA SALIÓ EL SORTEO!</div>
    <div style="font-size:22px;font-weight:900;margin:4px 0 8px">${yo.fh} Estás en la Zona ${esc(yo.grupo)}</div>
    ${ms.map(m=>{const r=rival(m);return `<div class="row" style="padding:6px 0;border-top:1px solid rgba(255,255,255,.2);flex-wrap:nowrap"><span style="width:62px;flex:none;font-size:12px;opacity:.85">Fecha ${m.fecha_n}</span><b style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">vs ${r?r.fh+' '+esc(r.nombre):'—'}</b><span style="flex:none;font-size:12px;opacity:.85">${r?esc(r.pais):''}</span></div>`}).join('')}
-   <div style="font-size:12px;opacity:.85;margin-top:6px">¡Suerte! Ya podés pronosticar los partidos de tu zona en Pronósticos.</div></div>`}
+   <div style="font-size:12px;opacity:.85;margin-top:6px">¡Suerte! Ya podés pronosticar los partidos de tu zona en Pronósticos.</div><button class="btn sm" style="margin-top:10px;background:#fff;border-color:#fff;color:#0b3a63" onclick="verSorteo('zona')">📍 Mirá tu zona en el tablero</button></div>`}
 /* ---- aviso de la organización (arriba en todas las pantallas) ---- */
 function horaTxt(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function avisoHTML(a){const u=a.nivel==='urgente';return `<div style="margin:10px 12px;padding:10px 12px;border-radius:12px;background:${u?'#d7263d':'#0b3a63'};color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)"><div style="font-size:11px;letter-spacing:.1em;font-weight:900;opacity:.9">${u?'🚨 AVISO URGENTE':'📢 AVISO'} DE LA ORGANIZACIÓN · ${horaTxt(a.t)}</div><div style="font-size:15px;font-weight:700;margin-top:3px;white-space:pre-wrap">${esc(a.txt)}</div></div>`}
@@ -557,7 +598,7 @@ function vTorneo(){
   <div class="card" style="margin:12px"><div class="row"><span style="font-size:30px">📍</span><div><b style="font-size:16px">Sede oficial: Cancha de Golf de Navarro</b><div class="sub2">Open · RAA 1000 · Liga Pro · FENOBA · Tour Local</div></div></div><img src="flyer-sede.png" alt="Navarro, sede oficial" loading="lazy" style="width:100%;border-radius:12px;margin-top:10px;display:block" onclick="visor('flyer-sede.png')"></div>
   ${diaTorneo()?`<div class="card" style="margin:12px;text-align:center"><b style="font-size:16px">🔴 ¡Hoy se juega el Mundialito!</b><div class="sub2" style="margin:6px 0 10px">Resultados, posiciones y quién terminó, al instante.</div><button class="btn" onclick="go('vivo')">Ver En vivo</button></div>`:`<div class="card" style="margin:12px"><b>🌎 Presentamos a los 64 jugadores</b><video src="video-confirmados.mp4?v=64e" controls playsinline preload="metadata" style="width:100%;border-radius:12px;margin-top:8px;background:#000;display:block"></video></div>
   <div class="card" style="margin:12px"><b>🎥 Los jugadores hablan · Video del Mundialito</b><a href="https://www.instagram.com/reel/DgIyflXAsWE/" target="_blank" rel="noopener" style="display:block;position:relative;margin-top:8px"><img src="reel-mundialito.jpg" alt="Video del Mundialito en Instagram" loading="lazy" style="width:100%;border-radius:12px;display:block"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;font-size:30px;padding-left:5px">▶</span></span></a><a class="btn" href="https://www.instagram.com/reel/DgIyflXAsWE/" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px;text-decoration:none">▶ Ver en Instagram</a></div>`}
-  <div class="card" style="margin:12px"><div class="row"><span style="font-size:30px">🎲</span><div><b style="font-size:16px">Gran Sorteo · viernes 27 de noviembre</b><div class="sub2">En vivo por YouTube | FootGolf Elite · 16 zonas, 64 jugadores, 64 países</div></div></div><img src="flyer-sorteo.png" alt="Gran Sorteo" loading="lazy" style="width:100%;border-radius:12px;margin-top:10px;display:block" onclick="visor('flyer-sorteo.png')">${btnYT('▶ Ver el sorteo en YouTube')}<div class="sub2" style="margin-top:6px;text-align:center">Y mientras sortean, mirá las zonas llenarse acá en la app 🎲</div></div>
+  ${diaTorneo()?'':sorteoCardHTML()}
   <div class="row" style="margin:0 12px;gap:8px"><div class="card" style="flex:1;margin:0;text-align:center"><b style="font-size:20px">${conf}</b><div class="sub2">partidos jugados</div></div><div class="card" style="flex:1;margin:0;text-align:center"><b style="font-size:20px">${S.matches.filter(m=>['cargado','disputado'].includes(m.estado)).length}</b><div class="sub2">por confirmar</div></div><div class="card" style="flex:1;margin:0;text-align:center"><b style="font-size:20px">${S.matches.filter(m=>m.fase==='G'&&m.estado==='pendiente'&&m.a_id&&m.b_id).length}</b><div class="sub2">pendientes</div></div></div>`;
   h+=`<h2 class="sec">Las 4 copas · ${$m(3250)} en premios</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px">${COPAS.map(c=>`<div onclick="S.tab='pos';S.posTab='copas';S.copaSel='${c.l}';pintar();window.scrollTo(0,0)" style="background:${c.bg};color:#fff;border-radius:14px;padding:14px 10px;text-align:center;cursor:pointer"><div style="font-size:30px">${c.i}</div><div style="font-weight:900;letter-spacing:.04em">COPA ${c.k.toUpperCase()}</div><div style="font-size:11.5px;opacity:.9">${c.pos}</div><div style="margin-top:6px;font-weight:800;font-size:15px;color:#ffe9a8">${$m(PREMIOS[c.k][0])}</div><div style="font-size:10.5px;opacity:.85">al campeón</div></div>`).join('')}</div>
   <div class="sub2" style="margin:8px 16px">Al terminar las 16 zonas, cada jugador va a la copa que le corresponde por su posición en la zona (1º a 4º). Tocá una copa para ver su cuadro.</div>
