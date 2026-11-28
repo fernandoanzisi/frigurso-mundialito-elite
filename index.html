@@ -266,7 +266,7 @@ function tabla(g){
     if(m.empate){a.pe++;b.pe++;a.pts++;b.pts++}else{const w=st[m.ganador_id],l=m.ganador_id===m.a_id?b:a;w.pg++;l.pp++;w.pts+=3;w.dif+=m.margen;l.dif-=m.margen}});
   conf.forEach(m=>{const a=st[m.a_id],b=st[m.b_id];if(!a||!b||a.pts!==b.pts||a.dif!==b.dif)return;   // enfrentamiento directo entre los igualados
     if(m.empate){a.h2h++;b.h2h++}else if(m.ganador_id===m.a_id)a.h2h+=3;else b.h2h+=3});
-  let l=Object.values(st).sort((x,y)=>y.pts-x.pts||y.dif-x.dif||y.h2h-x.h2h||x.p.id-y.p.id);
+  let l=Object.values(st).sort((x,y)=>y.pts-x.pts||y.dif-x.dif||y.h2h-x.h2h||(conf.length?0:(x.p.pos||9)-(y.p.pos||9))||x.p.id-y.p.id);   // sin partidos jugados: orden del sorteo
   const ov=S.cfg.desempate&&S.cfg.desempate[g];const completo=ms.length===6&&ms.every(m=>m.estado==='confirmado');
   if(ov&&completo)l=ov.map(id=>st[id]).filter(Boolean);
   return {l,completo,jugados:conf.length,manual:!!(ov&&completo)};
